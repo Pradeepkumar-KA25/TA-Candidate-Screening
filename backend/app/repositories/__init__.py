@@ -1,0 +1,7 @@
+from app.repositories.auth_repository import AuthRepository
+from app.repositories.activity_log_repository import ActivityLogRepository
+from app.repositories.candidate_repository import CandidateRepository
+from app.repositories.duplicate_review_repository import DuplicateReviewRepository
+from app.repositories.integration_settings_repository import IntegrationSettingsRepository
+from app.repositories.sync_log_repository import SyncLogRepository
+from app.repositories.normalization_rule_repository import NormalizationRuleRepository

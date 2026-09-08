@@ -1,0 +1,52 @@
+  <section>
+    <div class="page-header">
+      <div>
+        <p class="page-sub">Manage workspace preferences, appearance, and candidate synchronization.</p>
+      </div>
+    </div>
+
+    <div class="settings-grid">
+      <article class="card settings-card" id="preferences">
+        <div class="settings-icon" aria-hidden="true"><svg lucideSlidersHorizontal></svg></div>
+        <div>
+          <h2>Preferences</h2>
+          <p>Personal workspace preferences and notification controls will appear here.</p>
+        </div>
+      </article>
+
+      <article class="card settings-card" id="theme">
+        <div class="settings-icon" aria-hidden="true"><svg lucidePalette></svg></div>
+        <div class="theme-settings">
+          <h2>Theme</h2>
+          <p>Choose the application appearance.</p>
+          <div class="theme-switcher" role="group" aria-label="Theme selection">
+            <button
+              type="button"
+              class="theme-option"
+              [class.active]="currentTheme === 'light'"
+              (click)="setTheme('light')"
+            >
+              Light
+            </button>
+            <button
+              type="button"
+              class="theme-option"
+              [class.active]="currentTheme === 'dark'"
+              (click)="setTheme('dark')"
+            >
+              Dark
+            </button>
+          </div>
+        </div>
+      </article>
+
+      <article class="card settings-card settings-card-action" id="sync-candidates">
+        <div class="settings-icon" aria-hidden="true"><svg lucideRefreshCw></svg></div>
+        <div>
+          <h2>Sync Candidates</h2>
+          <p>Retrieve the latest candidate profiles from the connected Zoho Recruit account.</p>
+          <a routerLink="/sync-candidates" class="btn btn-secondary">Open Sync Candidates</a>
+        </div>
+      </article>
+    </div>
+  </section>

@@ -1,0 +1,160 @@
+  <section>
+    <div class="page-header">
+      <div>
+        <p class="page-sub">Compare candidates against a selected real Job Description and open any profile from the ranking table.</p>
+      </div>
+    </div>
+
+    <article class="card" *ngIf="jobDescriptions.length > 0; else noJdState">
+      <div class="card-header">
+        <h2>Requirement Profile</h2>
+      </div>
+
+      <div class="form-group" style="max-width: 520px; margin-bottom: 16px;">
+        <label>Select Job Description</label>
+        <select class="form-control" [value]="selectedJdId || ''" (change)="onJdChange(($any($event.target)).value)">
+          <option value="" disabled>Select JD</option>
+          <option *ngFor="let jd of jobDescriptions" [value]="jd.id">{{ jd.title }} - {{ jd.jd_code }}</option>
+        </select>
+      </div>
+
+      <p class="text-muted" *ngIf="selectedJd">Selected: {{ selectedJd.title }} ({{ selectedJd.jd_code }})</p>
+
+      <ng-container *ngIf="selectedJdSkills.length > 0; else noSkillProfile">
+        <div class="weight-bar-row" *ngFor="let skill of selectedJdSkills">
+          <span class="weight-label">{{ skill }}</span>
+          <div class="weight-bar-track">
+            <div class="weight-bar-fill" [style.width.%]="skillWeightPercent()"></div>
+          </div>
+          <span class="weight-points">{{ skillWeightPercent() }}%</span>
+        </div>
+      </ng-container>
+
+      <ng-template #noSkillProfile>
+        <p class="muted">Selected JD has no required skills configured.</p>
+      </ng-template>
+    </article>
+
+    <ng-template #noJdState>
+      <article class="card">
+        <h2>Requirement Profile</h2>
+        <p class="muted">No Job Descriptions found. Create JDs in Filters page to enable real ranking.</p>
+      </article>
+    </ng-template>
+
+    <article class="card" *ngIf="selectedJdId; else selectJdState">
+      <h2>Ranking Table</h2>
+      <div class="table-wrap" *ngIf="!loading && candidates.length > 0; else noCandidates">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 40px;">
+                <input 
+                  type="checkbox" 
+                  [checked]="isAllSelected()" 
+                  [indeterminate]="isIndeterminate()"
+                  (change)="toggleSelectAll()"
+                  aria-label="Select all candidates"
+                />
+              </th>
+              <th>Rank</th>
+              <th>Candidate</th>
+              <th>Skills</th>
+              <th>Experience</th>
+              <th>Notice Period</th>
+              <th>Match %</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let candidate of candidates; let index = index" [class.row-selected]="candidate.isSelected">
+              <td style="width: 40px;">
+                <input 
+                  type="checkbox" 
+                  [checked]="candidate.isSelected || false"
+                  (change)="toggleCandidateSelection(candidate.id)"
+                  [attr.aria-label]="'Select ' + safeName(candidate.full_name)"
+                />
+              </td>
+              <td>{{ rank((page - 1) * pageSize + index) }}</td>
+              <td [title]="safeName(candidate.full_name)">{{ safeName(candidate.full_name) }}</td>
+              <td [title]="skillSummary(candidate)">{{ skillSummary(candidate) }}</td>
+              <td>{{ candidate.total_experience_years ?? '—' }}</td>
+              <td>{{ candidate.notice_period_days ?? '—' }}</td>
+              <td>{{ matchLabel(candidate) }}</td>
+              <td>
+                <a [routerLink]="['/candidates', candidate.id]" class="btn btn-ghost btn-sm view-btn">View</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="table-footer">
+          <span *ngIf="totalItems; else emptyCount">
+            Showing {{ startItem }}–{{ endItem }} of {{ totalItems | number }} candidates
+          </span>
+          <ng-template #emptyCount>
+            <span>Showing 0 candidates</span>
+          </ng-template>
+
+          <div class="table-footer-controls">
+            <label class="page-size-control">
+              <span>Page size</span>
+              <select class="form-control" [value]="pageSize" (change)="onPageSizeChange(($any($event.target)).value)">
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+              </select>
+            </label>
+            <div class="pagination" *ngIf="totalPages > 0">
+              <a href="#" (click)="$event.preventDefault(); onPageChange(page - 1)">Previous</a>
+              <button
+                type="button"
+                class="page-button"
+                *ngFor="let pageNumber of paginationPages"
+                [class.active]="pageNumber === page"
+                [attr.aria-current]="pageNumber === page ? 'page' : null"
+                (click)="onPageChange(pageNumber)"
+              >
+                {{ pageNumber }}
+              </button>
+              <a href="#" (click)="$event.preventDefault(); onPageChange(page + 1)">Next</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <ng-template #noCandidates>
+        <p class="muted" *ngIf="loading">Loading ranked candidates...</p>
+        <p class="muted" *ngIf="!loading">No candidates available for ranking.</p>
+      </ng-template>
+    </article>
+
+    <ng-template #selectJdState>
+      <article class="card">
+        <h2>Ranking Table</h2>
+        <p class="muted">Select a Job Description to view candidate rankings.</p>
+      </article>
+    </ng-template>
+
+    <!-- Selection Bar -->
+    <div class="selection-bar" *ngIf="getSelectionCount() > 0">
+      <div class="selection-info">
+        <span class="selection-count">{{ getSelectionCount() }} candidate<span *ngIf="getSelectionCount() !== 1">s</span> selected</span>
+      </div>
+      <div class="selection-actions">
+        <button
+          class="btn btn-primary"
+          [disabled]="movingToShortlist || !selectedJdId"
+          (click)="moveSelectedToShortlist()"
+        >
+          {{ movingToShortlist ? 'Moving...' : 'Move to Shortlist' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <a routerLink="/duplicates" class="btn btn-primary">Review Duplicates</a>
+      <a routerLink="/candidates" class="btn btn-secondary">Back to Candidates</a>
+    </div>
+  </section>

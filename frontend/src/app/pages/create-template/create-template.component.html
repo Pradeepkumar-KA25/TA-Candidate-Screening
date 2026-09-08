@@ -1,0 +1,206 @@
+<section class="create-template">
+  <div class="page-header">
+    <div>
+      <h1>Create Template</h1>
+      <p class="page-sub">Create a reusable resume template from a sample PDF.</p>
+    </div>
+  </div>
+
+  <!-- Step 1: Upload PDF -->
+  @if (currentStep() === 'upload') {
+    <div class="template-step">
+      <header>
+        <p class="eyebrow">Step 1 of 3</p>
+        <h2>Upload Sample Resume</h2>
+        <p>Upload a sample resume PDF to create a template based on its structure.</p>
+      </header>
+
+      <div class="upload-card">
+        <input
+          #fileInput
+          type="file"
+          accept="application/pdf,.pdf"
+          (change)="onFileInputChange($event)"
+          hidden
+        />
+        <button
+          type="button"
+          class="upload-area"
+          (click)="browseFiles()"
+          [disabled]="loading()"
+          aria-label="Choose sample resume PDF"
+        >
+          <span class="upload-symbol">📄</span>
+          <strong>Choose a PDF or browse files</strong>
+          <span>PDF files only, up to 10 MB</span>
+        </button>
+
+        @if (selectedFile(); as file) {
+          <p class="selected-file">✓ Selected: {{ file.name }}</p>
+        }
+
+        @if (error()) {
+          <p class="error">{{ error() }}</p>
+        }
+
+        @if (loading()) {
+          <p class="status">Uploading and extracting resume data...</p>
+        }
+
+        <footer class="button-group">
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="goBack()"
+            [disabled]="loading()"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="primary-button"
+            (click)="uploadPdf()"
+            [disabled]="loading() || !selectedFile()"
+          >
+            {{ loading() ? 'Uploading...' : 'Upload and Continue' }}
+          </button>
+        </footer>
+      </div>
+    </div>
+  }
+
+  <!-- Step 2: Generate Template -->
+  @if (currentStep() === 'generate') {
+    <div class="template-step">
+      <header>
+        <p class="eyebrow">Step 2 of 3</p>
+        <h2>Generate Template</h2>
+        <p>Creating a template specification from your sample resume...</p>
+      </header>
+
+      <div class="loading-container">
+        @if (loading()) {
+          <div class="spinner"></div>
+          <p>Analyzing resume structure and generating template specification...</p>
+        }
+
+        @if (error()) {
+          <p class="error">{{ error() }}</p>
+          <button type="button" class="secondary-button" (click)="generateTemplate()">
+            Retry
+          </button>
+        }
+      </div>
+
+      <footer class="button-group">
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="goBack()"
+          [disabled]="loading()"
+        >
+          Back
+        </button>
+      </footer>
+    </div>
+  }
+
+  <!-- Step 3: Save Template -->
+  @if (currentStep() === 'save' && generatedDraft()) {
+    <div class="template-step">
+      <header>
+        <p class="eyebrow">Step 3 of 3</p>
+        <h2>Save Your Template</h2>
+        <p>Give your template a name and description so you can reuse it.</p>
+      </header>
+
+      <div class="form-card">
+        <div class="form-group">
+          <label for="template-name">Template Name *</label>
+          <input
+            id="template-name"
+            type="text"
+            [(ngModel)]="templateName"
+            placeholder="e.g., Modern Professional Template"
+            [disabled]="loading()"
+          />
+          <p class="help-text">This is how the template will appear in your list</p>
+        </div>
+
+        <div class="form-group">
+          <label for="template-description">Description</label>
+          <textarea
+            id="template-description"
+            [(ngModel)]="templateDescription"
+            placeholder="Optional: Describe what makes this template special..."
+            rows="4"
+            [disabled]="loading()"
+          ></textarea>
+        </div>
+
+        <div class="preview-section">
+          <h3>Template Preview</h3>
+          <div class="preview-html" [innerHTML]="generatedDraft()?.preview_html"></div>
+        </div>
+
+        @if (error()) {
+          <p class="error">{{ error() }}</p>
+        }
+
+        <footer class="button-group">
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="goBack()"
+            [disabled]="loading()"
+          >
+            Back
+          </button>
+          <button
+            type="button"
+            class="primary-button"
+            (click)="saveTemplate()"
+            [disabled]="loading() || !templateName()"
+          >
+            {{ loading() ? 'Saving...' : 'Save Template' }}
+          </button>
+        </footer>
+      </div>
+    </div>
+  }
+
+  <!-- Success Step -->
+  @if (currentStep() === 'success' && savedTemplate()) {
+    <div class="template-step success">
+      <header>
+        <p class="eyebrow">Success!</p>
+        <h2>Template Created</h2>
+        <p>Your template "{{ savedTemplate()?.name }}" has been created successfully!</p>
+      </header>
+
+      <div class="success-card">
+        <div class="success-icon">✓</div>
+        <h3>{{ savedTemplate()?.name }}</h3>
+        <p>{{ savedTemplate()?.description }}</p>
+
+        <div class="next-steps">
+          <h4>What's next?</h4>
+          <ul>
+            <li>Use this template to render resumes in the resume generator</li>
+            <li>Share this template with your team</li>
+            <li>Create more templates as needed</li>
+          </ul>
+        </div>
+
+        <footer class="button-group">
+          <button type="button" class="secondary-button" (click)="viewAllTemplates()">
+            View All Templates
+          </button>
+          <button type="button" class="primary-button" (click)="router.navigate(['/dashboard'])">
+            Back to Home
+          </button>
+        </footer>
+      </div>
+    </div>
+  }
+</section>

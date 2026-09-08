@@ -1,0 +1,128 @@
+  <section>
+    <div class="page-header" style="margin-bottom:20px;">
+      <div>
+        <p class="page-sub">See candidate progress, what needs attention, and the next recruitment action.</p>
+      </div>
+    </div>
+
+    <div *ngIf="errorMessage" class="error-banner" role="alert">{{ errorMessage }}</div>
+
+    <div class="stats-grid" *ngIf="stats as dashboardStats">
+      <a routerLink="/candidates" class="stat-card accent-blue stat-card-link">
+        <div class="stat-label">New Candidates</div>
+        <div class="stat-value">{{ dashboardStats.new_candidates | number }}</div>
+        <span>Last 7 days</span>
+      </a>
+      <a routerLink="/shortlists" class="stat-card accent-teal stat-card-link">
+        <div class="stat-label">Shortlisted</div>
+        <div class="stat-value">{{ dashboardStats.shortlisted_candidates | number }}</div>
+        <span>{{ dashboardStats.current_shortlist_size | number }} in latest shortlist</span>
+      </a>
+      <a routerLink="/candidates" class="stat-card accent-green stat-card-link">
+        <div class="stat-label">Interviews</div>
+        <div class="stat-value">{{ dashboardStats.interview_candidates | number }}</div>
+        <span>Interview stage</span>
+      </a>
+      <a routerLink="/duplicates" class="stat-card accent-amber stat-card-link">
+        <div class="stat-label">Duplicates</div>
+        <div class="stat-value">{{ dashboardStats.pending_duplicates | number }}</div>
+        <span>Awaiting review</span>
+      </a>
+    </div>
+
+    <div class="two-col">
+      <article class="panel connection-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Zoho Sync</h2>
+            <p>Latest candidate import performance.</p>
+          </div>
+          <span class="badge badge-neutral">
+            {{ isConnected ? 'Connected' : 'Disconnected' }}
+          </span>
+        </div>
+        <div class="sync-summary">
+          <div><span>Last sync</span><strong>{{ formattedLastSyncAt }}</strong></div>
+          <div><span>Status</span><strong>{{ (stats?.last_sync_status || 'Not synced') | titlecase }}</strong></div>
+          <div><span>Added / updated</span><strong>{{ stats?.last_sync_new || 0 }} / {{ stats?.last_sync_updated || 0 }}</strong></div>
+          <div><span>Errors</span><strong>{{ stats?.last_sync_errors || 0 }}</strong></div>
+        </div>
+        <a class="primary-action" routerLink="/sync-candidates" [class.disabled]="!isConnected">Sync Candidates</a>
+      </article>
+
+      <article class="panel quick-actions-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Quick Actions</h2>
+            <p>Jump straight to the next recruiter task.</p>
+          </div>
+        </div>
+        <div class="quick-actions">
+          <a routerLink="/resume-generator/upload" class="quick-action">Create Resume</a>
+          <a routerLink="/my-resumes" class="quick-action">My Resumes</a>
+          <a routerLink="/create-template" class="quick-action">Create Template</a>
+          <a routerLink="/candidates" class="quick-action">View Candidates</a>
+          <a routerLink="/sync-candidates" class="quick-action">Sync Candidates</a>
+          <a routerLink="/filters" class="quick-action">Create Filter</a>
+          <a routerLink="/shortlists" class="quick-action">Shortlist</a>
+          <a routerLink="/duplicates" class="quick-action">Duplicates</a>
+          <a routerLink="/ranking" class="quick-action">Export</a>
+        </div>
+      </article>
+    </div>
+
+    <div class="dashboard-grid" *ngIf="stats as dashboardStats">
+      <article class="panel dashboard-panel">
+        <div class="panel-header"><div><h2>Candidate Pipeline</h2><p>Where candidates are in the hiring flow.</p></div></div>
+        <div class="pipeline-list">
+          <a
+            class="pipeline-item dashboard-drilldown"
+            *ngFor="let item of dashboardStats.pipeline"
+            routerLink="/candidates"
+            [queryParams]="candidatePipelineQuery(item.label)"
+          >
+            <span>{{ item.label }}</span><strong>{{ item.count | number }}</strong>
+          </a>
+        </div>
+      </article>
+
+      <article class="panel dashboard-panel">
+        <div class="panel-header"><div><h2>Source Breakdown</h2><p>Where candidate profiles are coming from.</p></div></div>
+        <div class="breakdown-list" *ngIf="dashboardStats.source_breakdown.length; else noSources">
+          <a class="breakdown-item dashboard-drilldown" *ngFor="let item of dashboardStats.source_breakdown" routerLink="/candidates" [queryParams]="sourceQuery(item.label)"><span>{{ item.label }}</span><strong>{{ item.count | number }}</strong></a>
+        </div>
+        <ng-template #noSources><div class="activity-empty">Source data will appear after candidates are synced.</div></ng-template>
+      </article>
+
+      <article class="panel dashboard-panel attention-panel">
+        <div class="panel-header"><div><h2>Needs Attention</h2><p>Recruitment work waiting for you.</p></div></div>
+        <div class="attention-list" *ngIf="dashboardStats.needs_attention.length; else allClear">
+          <a class="attention-item dashboard-drilldown" *ngFor="let item of dashboardStats.needs_attention" [routerLink]="item.route" [queryParams]="attentionQuery(item.label)"><span>{{ item.label }}</span><strong>{{ item.count | number }}</strong></a>
+        </div>
+        <ng-template #allClear><div class="activity-empty">No urgent follow-ups right now.</div></ng-template>
+      </article>
+    </div>
+
+    <article class="panel activity-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Recent Activity</h2>
+            <p>Latest work across sync, filters, shortlists, reviews, and exports.</p>
+        </div>
+          <button type="button" class="view-all-button" (click)="loadDashboardOverview(20)">View All</button>
+      </div>
+
+      <div *ngIf="loading" class="activity-empty">Loading dashboard activity...</div>
+      <div *ngIf="!loading && recentActivity.length === 0" class="activity-empty">No recent activity yet.</div>
+
+      <div class="activity-list" *ngIf="!loading && recentActivity.length > 0">
+        <div class="activity-item" *ngFor="let item of recentActivity">
+          <div class="activity-icon">{{ item.action_type.charAt(0).toUpperCase() }}</div>
+          <div class="activity-copy">
+            <div class="activity-title">{{ activityDescription(item) }}</div>
+            <div class="activity-meta">{{ item.action_type | titlecase }} · {{ item.occurred_at | date: 'medium' }}</div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </section>

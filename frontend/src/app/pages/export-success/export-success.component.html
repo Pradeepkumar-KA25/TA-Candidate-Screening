@@ -1,0 +1,51 @@
+  <section>
+    <div class="success-container">
+      <div class="success-icon">
+        <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="40" cy="40" r="40" fill="#10b981" fill-opacity="0.1"/>
+          <path d="M33.3333 40L38.3333 45L46.6667 36.6667" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <p class="subtitle">Your shortlist has been successfully exported as an Excel file.</p>
+
+      <article class="card summary-grid" *ngIf="metadata">
+        <div class="summary-row">
+          <div class="summary-item">
+            <span class="summary-label">File Name</span>
+            <span class="summary-value">{{ metadata.filename }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Candidate Count</span>
+            <span class="summary-value">{{ metadata.candidate_count }} candidate<span *ngIf="metadata.candidate_count !== 1">s</span></span>
+          </div>
+        </div>
+
+        <div class="summary-row">
+          <div class="summary-item">
+            <span class="summary-label">Job Description</span>
+            <span class="summary-value">{{ metadata.jd_title }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Generated</span>
+            <span class="summary-value">{{ metadata.generated_at | date: 'short' }}</span>
+          </div>
+        </div>
+      </article>
+
+      <div class="action-row">
+        <button class="btn btn-primary" (click)="downloadAgain()" [disabled]="loading">
+          {{ loading ? 'Downloading...' : 'Download Excel' }}
+        </button>
+        <a routerLink="/ranking" class="btn btn-secondary">Back to Ranking</a>
+      </div>
+
+      <div class="additional-actions">
+        <p>
+          <a routerLink="/candidates" class="link-text">View all candidates</a>
+          <span class="separator">•</span>
+          <a routerLink="/dashboard" class="link-text">Go to dashboard</a>
+        </p>
+      </div>
+    </div>
+  </section>

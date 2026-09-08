@@ -1,0 +1,26 @@
+:host {
+  display: block;
+}
+
+.breadcrumb-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--slate-400);
+  margin-bottom: 14px;
+}
+
+.breadcrumb-row a {
+  color: var(--slate-600);
+}
+
+.crumb-current {
+  color: var(--slate-900);
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--slate-600);
+}
+

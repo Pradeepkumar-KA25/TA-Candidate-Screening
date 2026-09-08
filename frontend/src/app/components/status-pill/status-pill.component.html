@@ -1,0 +1,4 @@
+<div class="status-pill" [ngClass]="state === 'connected' ? 'state-connected' : 'state-disconnected'">
+  <span class="status-dot" aria-hidden="true"></span>
+  <span class="status-label">{{ labelPrefix }}: {{ stateLabel }}</span>
+</div>

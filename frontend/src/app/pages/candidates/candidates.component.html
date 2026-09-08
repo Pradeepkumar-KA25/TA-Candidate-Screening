@@ -1,0 +1,254 @@
+  <section>
+    <div class="page-header">
+      <div>
+        <p class="page-sub">Browse candidate profiles synchronized from Zoho Recruit.</p>
+      </div>
+    </div>
+
+    <div class="candidate-toolbar">
+      <form class="search-input" (ngSubmit)="onSearchSubmit()">
+        <input
+          type="text"
+          [formControl]="searchControl"
+          placeholder="Search by candidate name, skill, company..."
+          aria-label="Search candidates"
+        />
+        <button type="submit" class="btn btn-secondary search-button" aria-label="Search" title="Search">
+          <span aria-hidden="true">&#128269;</span>
+        </button>
+      </form>
+
+      <div class="candidate-toolbar-actions">
+        <button type="button" class="btn btn-secondary filter-button" [class.is-active]="isFilterPanelOpen" (click)="toggleFilters()">
+          Filters <span class="chev">▼</span>
+        </button>
+        <div class="saved-filters-control">
+          <button
+            type="button"
+            class="btn btn-secondary filter-button"
+            [class.is-active]="savedFiltersOpen"
+            (click)="toggleSavedFilters()"
+            [attr.aria-expanded]="savedFiltersOpen"
+          >
+            Saved Filters <span class="chev">▼</span>
+          </button>
+          <div class="saved-filters-menu" *ngIf="savedFiltersOpen">
+            <p class="saved-filters-empty" *ngIf="savedTemplates.length === 0">No saved filters yet.</p>
+            <button type="button" class="saved-filter-option" *ngFor="let template of savedTemplates" (click)="applySavedFilter(template)">
+              {{ template.name }}
+            </button>
+          </div>
+        </div>
+        <label class="candidate-sort-control">
+          <select class="form-control" aria-label="Sort candidates" [value]="sortBy && sortOrder ? sortBy + ':' + sortOrder : ''" (change)="onSortChange(($any($event.target)).value)">
+            <option value="" disabled>Select sort</option>
+            <option value="full_name:asc">Name A-Z</option>
+            <option value="full_name:desc">Name Z-A</option>
+            <option value="current_company:asc">Company A-Z</option>
+            <option value="updated_at:desc">Recently Updated</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="summary-row">
+      <span class="summary-count">{{ totalItems | number }} candidates</span>
+      <span class="summary-text">Last Zoho sync: {{ formattedSyncTime }}</span>
+    </div>
+
+    <section class="card filter-panel" [class.is-open]="isFilterPanelOpen">
+      <div class="card-header">
+        <h2>Basic Filters</h2>
+        <p class="card-sub">All selected filters are applied with AND logic.</p>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group" style="grid-column: span 3;">
+          <label>Job Description</label>
+          <select class="form-control" [formControl]="basicFilterForm.controls.jdId">
+            <option value="any">Any / No JD</option>
+            <option *ngFor="let jd of jobDescriptions" [value]="jd.id">{{ jd.title }} - {{ jd.jd_code }}</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="grid-column: span 3;">
+          <label>Skills to Match Against JD</label>
+          <input class="form-control" type="text" [formControl]="basicFilterForm.controls.skills" placeholder="e.g. Java, Spring Boot" />
+        </div>
+
+        <div class="form-group">
+          <label>Experience - Minimum</label>
+          <input class="form-control" type="number" min="0" [formControl]="basicFilterForm.controls.experienceMin" placeholder="Years" />
+        </div>
+
+        <div class="form-group">
+          <label>Experience - Maximum</label>
+          <input class="form-control" type="number" min="0" [formControl]="basicFilterForm.controls.experienceMax" placeholder="Years" />
+        </div>
+
+        <div class="form-group">
+          <label>Current Location</label>
+          <input class="form-control" type="text" [formControl]="basicFilterForm.controls.location" placeholder="e.g. Bengaluru" />
+        </div>
+
+        <div class="form-group">
+          <label>Preferred Location</label>
+          <input
+            class="form-control"
+            type="text"
+            [formControl]="basicFilterForm.controls.preferredLocation"
+            placeholder="e.g. Bengaluru"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Notice Period Max (Days)</label>
+          <input class="form-control" type="number" min="0" [formControl]="basicFilterForm.controls.noticePeriodMax" placeholder="e.g. 30" />
+        </div>
+
+        <div class="form-group">
+          <label>Status</label>
+          <select class="form-control" [formControl]="basicFilterForm.controls.status">
+            <option value="any">Any</option>
+            <option value="active">Active</option>
+            <option value="open_to_opportunities">Open to Opportunities</option>
+          </select>
+        </div>
+      </div>
+
+      <p class="filter-validation" *ngIf="filterValidationMessage">{{ filterValidationMessage }}</p>
+
+      <div class="btn-row" style="margin-top:16px;">
+        <button type="button" class="btn btn-primary" (click)="applyFilters()">Apply Filters</button>
+        <button type="button" class="btn btn-secondary" (click)="clearBasicFilters()">Clear Filters</button>
+      </div>
+
+      <div class="more-filters-row">
+        <a routerLink="/filters" class="more-filters-link">More Filters</a>
+      </div>
+    </section>
+
+    <div class="chip-row active-filter-row" *ngIf="activeFilterChips.length > 0">
+      <span class="filter-chip" *ngFor="let chip of activeFilterChips">{{ chip }}</span>
+      <button type="button" class="btn btn-ghost btn-sm" (click)="cancelActiveFilters()">Cancel filters</button>
+    </div>
+
+    <div *ngIf="errorMessage" class="error-banner" role="alert">{{ errorMessage }}</div>
+
+    <div class="table-wrap">
+      <table class="data-table compact-candidate-table">
+          <thead>
+            <tr>
+              <th style="width:40px;">
+                <input
+                  type="checkbox"
+                  [checked]="isAllSelected()"
+                  [indeterminate]="isIndeterminate()"
+                  (change)="toggleSelectAll()"
+                  aria-label="Select all candidates"
+                />
+              </th>
+              <th>Candidate</th>
+              <th>Skills</th>
+              <th>Experience</th>
+              <th>Location</th>
+              <th>Current Company</th>
+              <th>Notice Period</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="loading">
+              <td colspan="9" class="empty-state">Loading candidates...</td>
+            </tr>
+            <tr *ngIf="!loading && candidates.length === 0">
+              <td colspan="9" class="empty-state">No candidates found.</td>
+            </tr>
+            <tr *ngFor="let candidate of candidates" [class.row-selected]="isCandidateSelected(candidate.id)">
+              <td style="width:40px;">
+                <input
+                  type="checkbox"
+                  [checked]="isCandidateSelected(candidate.id)"
+                  (change)="toggleCandidateSelection(candidate.id)"
+                  [attr.aria-label]="'Select ' + safeCandidateName(candidate.full_name)"
+                />
+              </td>
+              <td class="cell-name">
+                <div class="candidate-name" [title]="safeCandidateName(candidate.full_name)">{{ safeCandidateName(candidate.full_name) }}</div>
+                <div class="candidate-meta" [title]="safeText(candidate.zoho_candidate_id)">{{ safeText(candidate.zoho_candidate_id) }}</div>
+              </td>
+              <td class="skills-cell" [title]="skillSummary(candidate)">{{ skillSummary(candidate) }}</td>
+              <td>{{ experienceLabel(candidate) }}</td>
+              <td [title]="safeText(candidate.current_location)">{{ safeText(candidate.current_location) }}</td>
+              <td [title]="safeText(candidate.current_company)">{{ safeText(candidate.current_company) }}</td>
+              <td>{{ noticePeriodLabel(candidate) }}</td>
+              <td><span class="status-badge" [ngClass]="statusClass(candidate.status)">{{ statusLabel(candidate.status) }}</span></td>
+              <td>
+                <a [routerLink]="['/candidates', candidate.id]" class="btn btn-ghost btn-sm">View</a>
+              </td>
+            </tr>
+          </tbody>
+      </table>
+
+      <div class="table-footer">
+        <span *ngIf="totalItems; else emptyCount">
+          Showing {{ startItem }}–{{ endItem }} of {{ totalItems | number }} candidates
+        </span>
+        <ng-template #emptyCount>
+          <span>Showing 0 candidates</span>
+        </ng-template>
+
+        <div class="table-footer-controls">
+          <label class="page-size-control">
+            <span>Page size</span>
+            <select class="form-control" [value]="pageSize" (change)="onPageSizeChange(($any($event.target)).value)">
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+            </select>
+          </label>
+          <div class="pagination" *ngIf="totalPages > 0">
+            <a href="#" (click)="$event.preventDefault(); onPageChange(page - 1)">Previous</a>
+            <button
+              type="button"
+              class="page-button"
+              *ngFor="let pageNumber of paginationPages"
+              [class.active]="pageNumber === page"
+              [attr.aria-current]="pageNumber === page ? 'page' : null"
+              (click)="onPageChange(pageNumber)"
+            >
+              {{ pageNumber }}
+            </button>
+            <a href="#" (click)="$event.preventDefault(); onPageChange(page + 1)">Next</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="selection-bar" *ngIf="getSelectionCount() > 0">
+      <div class="selection-info">
+        <span class="selection-count">{{ getSelectionCount() }} candidate<span *ngIf="getSelectionCount() !== 1">s</span> selected</span>
+      </div>
+
+      <div class="selection-actions">
+        <label class="form-group" style="margin:0; min-width:280px;">
+          <span>Move to Job Description shortlist</span>
+          <select class="form-control" [value]="selectedShortlistJdId || ''" (change)="selectedShortlistJdId = ($any($event.target)).value">
+            <option value="" disabled>Select JD</option>
+            <option *ngFor="let jd of jobDescriptions" [value]="jd.id">{{ jd.title }} - {{ jd.jd_code }}</option>
+          </select>
+        </label>
+
+        <button class="btn btn-primary" [disabled]="movingToShortlist || !selectedShortlistJdId" (click)="moveSelectedToShortlist()">
+          {{ movingToShortlist ? 'Moving...' : 'Move to Shortlist' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="action-row" *ngIf="!loading && candidates.length > 0">
+      <a routerLink="/ranking" class="btn btn-primary">View Ranking</a>
+      <a routerLink="/duplicates" class="btn btn-secondary">Review Duplicates</a>
+    </div>
+  </section>

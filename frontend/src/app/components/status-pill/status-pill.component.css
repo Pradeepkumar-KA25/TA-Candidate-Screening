@@ -1,0 +1,37 @@
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid #DCE3EC;
+  border-radius: 999px;
+  font-size: 12.5px;
+  background: #F5F7FA;
+  color: #687A94;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.state-connected .status-dot {
+  background: #B6D334;
+}
+
+.state-disconnected .status-dot {
+  background: #D64545;
+}
+
+.state-connected {
+  border-color: #CFE7D8;
+  background: #EDF8F0;
+  color: #168A4A;
+}
+
+.state-disconnected {
+  border-color: #F3C7C7;
+  background: #fef2f2;
+  color: #D64545;
+}

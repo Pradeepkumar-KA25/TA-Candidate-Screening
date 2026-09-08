@@ -1,0 +1,136 @@
+:host {
+  display: block;
+}
+
+.state-chip {
+  display: inline-flex;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.state-chip.success {
+  color: var(--green-600);
+  background: var(--green-50);
+  border: 1px solid #bbf7d0;
+}
+
+.state-chip.failed {
+  color: var(--red-600);
+  background: var(--red-50);
+  border: 1px solid #fecaca;
+}
+
+h1 {
+  margin: 0;
+  font-size: 28px;
+  color: #0f172a;
+}
+
+.page-sub {
+  margin: 8px 0 20px;
+  color: #52607a;
+}
+
+.summary-grid-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+.summary-item {
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  padding: 12px;
+}
+
+.summary-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--slate-900);
+}
+
+.summary-label {
+  font-size: 12px;
+  color: var(--slate-600);
+}
+
+.normalization-card {
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  margin-bottom: 18px;
+}
+
+.normalization-card h2 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.chips-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mapping-chip {
+  border: 1px solid rgba(47, 90, 242, 0.18);
+  border-radius: var(--radius-md);
+  background: var(--blue-50);
+  padding: 8px 10px;
+  display: grid;
+  gap: 2px;
+}
+
+.field-name {
+  color: var(--blue-700);
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.arrow {
+  color: var(--slate-700);
+  font-size: 13px;
+}
+
+.error-text {
+  color: var(--red-600);
+  margin: 0 0 16px;
+}
+
+body[data-theme='dark'] h1 {
+  color: var(--text-primary);
+}
+
+body[data-theme='dark'] .page-sub {
+  color: var(--text-secondary);
+}
+
+body[data-theme='dark'] .summary-item,
+body[data-theme='dark'] .normalization-card {
+  background: var(--surface);
+  border-color: var(--border-color);
+}
+
+body[data-theme='dark'] .state-chip.success {
+  background: rgba(61, 213, 152, 0.12);
+  border-color: rgba(61, 213, 152, 0.45);
+}
+
+body[data-theme='dark'] .state-chip.failed {
+  background: rgba(255, 107, 107, 0.12);
+  border-color: rgba(255, 107, 107, 0.45);
+}
+
+@media (max-width: 768px) {
+  .summary-grid-5 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .chips-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .btn-row {
+    flex-direction: column;
+  }
+}

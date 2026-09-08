@@ -1,0 +1,101 @@
+<div class="auth-screen">
+  <section class="auth-visual">
+    <div class="auth-brand">
+      <span class="brand-mark">TA</span>
+      <span>Talent Acquisition</span>
+    </div>
+
+    <div class="auth-copy">
+      <span class="eyebrow">Candidate Screening</span>
+      <h1>Candidate Screening &amp; Shortlisting</h1>
+      <p>
+        Intelligent Candidate Filtering and Export Layer for Zoho Recruit. Sync candidate profiles, apply
+        multi-criteria filters, rank matches, and export a recruiter-ready shortlist.
+      </p>
+
+      <div class="auth-flow">
+        <span class="flow-step">Sync</span><span class="flow-sep">&rarr;</span>
+        <span class="flow-step">Normalize</span><span class="flow-sep">&rarr;</span>
+        <span class="flow-step">Filter</span><span class="flow-sep">&rarr;</span>
+        <span class="flow-step">Rank</span><span class="flow-sep">&rarr;</span>
+        <span class="flow-step">Shortlist</span><span class="flow-sep">&rarr;</span>
+        <span class="flow-step">Export .xlsx</span>
+      </div>
+    </div>
+
+    <div class="auth-note">Read-only toward Zoho Recruit · No candidate records are modified</div>
+  </section>
+
+  <section class="auth-panel">
+    <div class="auth-card">
+      <h2>Sign in</h2>
+      <p class="auth-card-sub">Access the candidate screening workspace.</p>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
+        <div class="form-group">
+          <label for="email">Email / Username</label>
+          <input
+            id="email"
+            class="form-control"
+            type="email"
+            formControlName="email"
+            placeholder="recruiter@company.com"
+          />
+          <p class="field-error" *ngIf="emailControl.touched && emailControl.hasError('required')">
+            Email is required.
+          </p>
+          <p class="field-error" *ngIf="emailControl.touched && emailControl.hasError('email')">
+            Enter a valid email address.
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="password-input">
+            <input
+              id="password"
+              class="form-control"
+              [type]="showPassword ? 'text' : 'password'"
+              formControlName="password"
+              placeholder="••••••••••"
+            />
+            <button
+              class="password-toggle"
+              type="button"
+              (click)="togglePasswordVisibility()"
+              [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+              [attr.aria-pressed]="showPassword"
+            >
+              <svg *ngIf="!showPassword" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                <circle cx="12" cy="12" r="2.5" />
+              </svg>
+              <svg *ngIf="showPassword" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 3l18 18M10.6 6.3A10.7 10.7 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-3.2 3.7M6.1 6.1A17.5 17.5 0 0 0 2.5 12S6 18 12 18c1.1 0 2.1-.2 3-.6" />
+                <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+              </svg>
+            </button>
+          </div>
+          <p class="field-error" *ngIf="passwordControl.touched && passwordControl.hasError('required')">
+            Password is required.
+          </p>
+        </div>
+
+        <div class="form-options">
+          <label class="checkbox-row" for="remember_me">
+            <input id="remember_me" type="checkbox" formControlName="remember_me" />
+            <span>Remember me</span>
+          </label>
+        </div>
+
+        <p class="submit-error" *ngIf="submitError">{{ submitError }}</p>
+
+        <button class="btn btn-primary btn-lg btn-block" type="submit" [disabled]="isSubmitting">
+          {{ isSubmitting ? 'Signing in...' : 'Sign In' }}
+        </button>
+      </form>
+
+      <p class="auth-footnote">Authorized recruiters only</p>
+    </div>
+  </section>
+</div>

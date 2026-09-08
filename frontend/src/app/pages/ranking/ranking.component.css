@@ -1,0 +1,94 @@
+:host {
+  display: block;
+}
+
+.view-btn {
+  white-space: nowrap;
+}
+
+.pagination .page-button {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--slate-700);
+  font: inherit;
+  cursor: pointer;
+}
+
+.pagination .page-button:hover {
+  background: var(--slate-100);
+}
+
+.pagination .page-button.active {
+  border-color: var(--blue-600);
+  background: var(--blue-600);
+  color: var(--white);
+  font-weight: 700;
+}
+
+.muted {
+  color: #64748b;
+  margin: 0;
+}
+
+/* Checkbox and Selection Styles */
+input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+.row-selected {
+  background-color: #f0f9ff;
+}
+
+.selection-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-top: 16px;
+  gap: 16px;
+}
+
+.selection-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selection-count {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.selection-actions {
+  display: flex;
+  gap: 8px;
+}
+
+body[data-theme='dark'] .muted {
+  color: var(--text-secondary);
+}
+
+body[data-theme='dark'] .row-selected {
+  background-color: #2B4563;
+}
+
+body[data-theme='dark'] .selection-bar {
+  background: var(--surface);
+  border-color: var(--border-color);
+}
+
+body[data-theme='dark'] .selection-count {
+  color: var(--text-primary);
+}
+
+

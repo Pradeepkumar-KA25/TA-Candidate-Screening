@@ -1,0 +1,77 @@
+:host {
+  display: block;
+}
+
+.shortlist-head {
+  align-items: flex-start;
+}
+
+.filter-row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.jd-filter {
+  min-width: 320px;
+  margin-bottom: 0;
+}
+
+.muted {
+  color: var(--slate-600);
+}
+
+.candidate-name {
+  font-weight: 600;
+}
+
+.candidate-meta {
+  color: var(--slate-500);
+  font-size: 12px;
+}
+
+.skills-cell {
+  max-width: 260px;
+}
+
+.row-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.icon-action {
+  align-items: center;
+  background: var(--white);
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-sm);
+  color: var(--slate-700);
+  display: inline-flex;
+  font-size: 16px;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
+.icon-action-danger {
+  color: var(--red-600);
+}
+
+.icon-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+:host-context(body[data-theme='dark']) .icon-action {
+  background: #273344;
+  border-color: #354255;
+  color: #F1F5F9;
+}
+
+:host-context(body[data-theme='dark']) .icon-action:hover:not(:disabled) {
+  background: #263B50;
+  border-color: #354255;
+}
+
+:host-context(body[data-theme='dark']) .icon-action-danger {
+  color: #FF6B6B;
+}

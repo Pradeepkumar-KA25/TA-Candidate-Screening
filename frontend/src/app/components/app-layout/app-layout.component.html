@@ -1,0 +1,8 @@
+<app-shell
+  [activeNav]="activeNav"
+  [headerContext]="headerContext"
+  [statusState]="statusState"
+  (logoutRequested)="onLogout()"
+>
+  <router-outlet (activate)="updateRouteContext(router.url)"></router-outlet>
+</app-shell>

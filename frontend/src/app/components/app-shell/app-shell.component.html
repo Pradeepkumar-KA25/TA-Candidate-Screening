@@ -1,0 +1,86 @@
+<div class="app-layout" [class.sidebar-collapsed]="sidebarCollapsed">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <img class="brand-logo" [src]="logoSrc" alt="Kanini logo" />
+      <button
+        type="button"
+        class="sidebar-toggle"
+        (click)="toggleSidebar()"
+        [attr.aria-label]="sidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'"
+        [title]="sidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'"
+      >
+        <svg *ngIf="sidebarCollapsed" lucidePanelLeftOpen aria-hidden="true"></svg>
+        <svg *ngIf="!sidebarCollapsed" lucidePanelLeftClose aria-hidden="true"></svg>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a routerLink="/dashboard" [class.active]="activeNav === 'dashboard'" [attr.title]="sidebarCollapsed ? 'Dashboard' : null">
+        <span class="nav-icon"><svg lucideLayoutDashboard aria-hidden="true"></svg></span><span class="nav-text">Dashboard</span>
+      </a>
+      <a routerLink="/candidates" [class.active]="activeNav === 'candidates'" [attr.title]="sidebarCollapsed ? 'Candidates' : null">
+        <span class="nav-icon"><svg lucideUsersRound aria-hidden="true"></svg></span><span class="nav-text">Candidates</span>
+      </a>
+      <a routerLink="/filters" [class.active]="activeNav === 'filters'" [attr.title]="sidebarCollapsed ? 'Filters' : null">
+        <span class="nav-icon"><svg lucideSlidersHorizontal aria-hidden="true"></svg></span><span class="nav-text">Filters</span>
+      </a>
+      <a routerLink="/ranking" [class.active]="activeNav === 'ranking'" [attr.title]="sidebarCollapsed ? 'Ranking' : null">
+        <span class="nav-icon"><svg lucideChartNoAxesCombined aria-hidden="true"></svg></span><span class="nav-text">Ranking</span>
+      </a>
+      <a routerLink="/shortlists" [class.active]="activeNav === 'shortlists'" [attr.title]="sidebarCollapsed ? 'Shortlists' : null">
+        <span class="nav-icon"><svg lucideListChecks aria-hidden="true"></svg></span><span class="nav-text">Shortlists</span>
+      </a>
+      <a routerLink="/duplicates" [class.active]="activeNav === 'duplicates'" [attr.title]="sidebarCollapsed ? 'Duplicates' : null">
+        <span class="nav-icon"><svg lucideCopy aria-hidden="true"></svg></span><span class="nav-text">Duplicates</span>
+      </a>
+      <a routerLink="/resume-generator" [class.active]="activeNav === 'resume-generator'" [attr.title]="sidebarCollapsed ? 'Resume Generator' : null">
+        <span class="nav-icon"><svg lucideFileText aria-hidden="true"></svg></span><span class="nav-text">Resume Generator</span>
+      </a>
+      <a routerLink="/my-resumes" [class.active]="activeNav === 'my-resumes'" [attr.title]="sidebarCollapsed ? 'My Resumes' : null">
+        <span class="nav-icon"><svg lucideFiles aria-hidden="true"></svg></span><span class="nav-text">My Resumes</span>
+      </a>
+      <a routerLink="/create-template" [class.active]="activeNav === 'create-template'" [attr.title]="sidebarCollapsed ? 'Create Template' : null">
+        <span class="nav-icon"><svg lucideLayout aria-hidden="true"></svg></span><span class="nav-text">Create Template</span>
+      </a>
+      <a routerLink="/settings" [class.active]="activeNav === 'settings'" [attr.title]="sidebarCollapsed ? 'Settings' : null">
+        <span class="nav-icon"><svg lucideSettings aria-hidden="true"></svg></span><span class="nav-text">Settings</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="#" class="logout-link" (click)="onLogout($event)" [attr.title]="sidebarCollapsed ? 'Logout' : null">
+        <svg lucideLogOut aria-hidden="true"></svg><span class="nav-text">Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <div class="app-content">
+    <header class="top-header">
+      <div class="header-context">{{ headerContext }}</div>
+      <div class="header-right">
+        <div class="zoho-status">
+          <span class="status-dot" [class.dot-red]="statusState === 'disconnected'"></span>
+          Zoho Recruit: {{ statusState === 'connected' ? 'Connected' : 'Disconnected' }}
+        </div>
+        <button
+          type="button"
+          class="theme-toggle"
+          (click)="toggleTheme()"
+          [attr.aria-label]="currentTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+          [title]="currentTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+        >
+          <svg *ngIf="currentTheme === 'light'" lucideMoonStar aria-hidden="true"></svg>
+          <svg *ngIf="currentTheme === 'dark'" lucideSunMedium aria-hidden="true"></svg>
+        </button>
+        <div class="header-recruiter">
+          <span class="avatar-sm">{{ recruiterInitials }}</span>
+          <span class="recruiter-name">{{ recruiterName }}</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <ng-content></ng-content>
+    </main>
+  </div>
+</div>

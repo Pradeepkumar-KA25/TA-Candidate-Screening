@@ -1,0 +1,100 @@
+  <section *ngIf="!loading && candidate as profile">
+    <article class="card profile-card">
+      <div class="profile-header">
+        <div class="profile-avatar">{{ safeName(profile.full_name).charAt(0) }}</div>
+        <div>
+          <h2>{{ safeName(profile.full_name) }}</h2>
+          <div class="profile-meta">{{ safeText(profile.current_company) }}</div>
+          <div class="badge-row">
+            <span class="match-badge">{{ matchLabel() }}</span>
+            <span class="status-badge">{{ statusLabel(profile.status) }}</span>
+            <span class="meta-badge">{{ safeText(profile.source) }}</span>
+            <span class="meta-badge" *ngIf="profile.match_context.jd_id">{{ safeText(profile.match_context.jd_id) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <h3>Contact Information</h3>
+      <div class="detail-grid">
+        <div class="detail-row"><dt>Email</dt><dd>{{ safeEmail(profile.email) }}</dd></div>
+        <div class="detail-row"><dt>Phone</dt><dd>{{ safeText(profile.phone) }}</dd></div>
+      </div>
+
+      <h3>Professional Information</h3>
+      <div class="detail-grid">
+        <div class="detail-row"><dt>Experience</dt><dd>{{ experienceLabel(profile.total_experience_years) }}</dd></div>
+        <div class="detail-row"><dt>Relevant Experience</dt><dd>{{ experienceLabel(profile.relevant_experience_years) }}</dd></div>
+        <div class="detail-row"><dt>Current Company</dt><dd>{{ safeText(profile.current_company) }}</dd></div>
+        <div class="detail-row"><dt>Current Location</dt><dd>{{ safeText(profile.current_location) }}</dd></div>
+        <div class="detail-row"><dt>Preferred Location</dt><dd>{{ safeText(profile.preferred_location) }}</dd></div>
+        <div class="detail-row"><dt>Notice Period</dt><dd>{{ noticePeriodLabel(profile.notice_period_days) }}</dd></div>
+      </div>
+
+      <h3>Skills</h3>
+      <div class="chip-row">
+        <span class="skill-chip" *ngFor="let skill of profile.skills || []">{{ safeText(skill) }}</span>
+        <span class="skill-chip empty-chip" *ngIf="!profile.skills || profile.skills.length === 0">No skills available</span>
+      </div>
+
+      <h3>Education</h3>
+      <div class="detail-grid">
+        <div class="detail-row"><dt>Degree</dt><dd>{{ safeText(profile.degree) }}</dd></div>
+        <div class="detail-row"><dt>Normalized</dt><dd>{{ safeText(profile.normalized_degree) }}</dd></div>
+      </div>
+
+      <h3>Compensation</h3>
+      <div class="detail-grid">
+        <div class="detail-row"><dt>Current CTC</dt><dd>{{ ctcLabel(profile.current_ctc) }}</dd></div>
+        <div class="detail-row"><dt>Expected CTC</dt><dd>{{ ctcLabel(profile.expected_ctc) }}</dd></div>
+      </div>
+
+      <h3>Candidate Source</h3>
+      <div class="detail-grid">
+        <div class="detail-row"><dt>Source</dt><dd>{{ safeText(profile.source) }}</dd></div>
+        <div class="detail-row"><dt>Candidate ID</dt><dd>{{ safeText(profile.zoho_candidate_id) }}</dd></div>
+      </div>
+
+      <h3>Match Context</h3>
+      <div class="detail-grid">
+        <div class="detail-row"><dt>Job Description</dt><dd>{{ safeText(profile.match_context.jd_title) }}</dd></div>
+        <div class="detail-row"><dt>Match Score</dt><dd>{{ profile.match_context.match_score ?? '—' }}</dd></div>
+      </div>
+    </article>
+
+    <article class="card">
+      <h3>Normalized Data</h3>
+      <div class="norm-list" *ngIf="profile.normalized_data.length > 0; else noNormalizationData">
+        <div class="norm-chip" *ngFor="let pair of profile.normalized_data">
+          <span class="norm-field">{{ pair.field }}</span>
+          <span class="raw">{{ pair.raw_value }}</span>
+          <span class="arrow">→</span>
+          <span class="normalized">{{ pair.normalized_value }}</span>
+        </div>
+      </div>
+      <ng-template #noNormalizationData>
+        <p class="muted">No normalization changes detected for this profile.</p>
+      </ng-template>
+    </article>
+
+    <div class="info-box">
+      This profile is read-only. Candidate information is not pushed back to Zoho Recruit.
+    </div>
+
+    <div class="action-row">
+      <a routerLink="/candidates" class="btn btn-secondary">Back to Results</a>
+      <a routerLink="/ranking" class="btn btn-primary">View Match Analysis</a>
+      <a routerLink="/duplicates" class="btn btn-secondary">Review Duplicates</a>
+    </div>
+  </section>
+
+  <section *ngIf="loading">
+    <div class="card"><p class="muted">Loading candidate profile...</p></div>
+  </section>
+
+  <section *ngIf="!loading && !candidate">
+    <div class="card error-card">
+      <h2>Candidate not available</h2>
+      <p>{{ errorMessage || 'Unable to load this candidate profile.' }}</p>
+      <a routerLink="/candidates" class="btn btn-secondary">Back to Candidates</a>
+    </div>
+  </section>

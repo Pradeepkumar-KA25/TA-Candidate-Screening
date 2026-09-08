@@ -1,0 +1,43 @@
+<section class="my-resumes">
+  <div class="page-header">
+    <div>
+      <h1>My Resumes</h1>
+      <p class="page-sub">View, edit, and manage your saved resumes.</p>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="error-banner" role="alert">{{ error }}</div>
+
+  <div class="resumes-container">
+    <div *ngIf="loading" class="loading-spinner">Loading resumes...</div>
+
+    <div *ngIf="!loading && resumes.length === 0" class="empty-state">
+      <p>No resumes found. Start by creating a new resume.</p>
+      <a routerLink="/resume-generator/upload" class="primary-action">Create Resume</a>
+    </div>
+
+    <div *ngIf="!loading && resumes.length > 0" class="resumes-grid">
+      <article *ngFor="let resume of resumes" class="resume-card">
+        <div class="resume-header">
+          <h3>{{ resume.filename }}</h3>
+          <span class="resume-date">{{ formatDate(resume.created_at) }}</span>
+        </div>
+
+        <div class="resume-info">
+          <p><strong>File:</strong> {{ resume.filename }}</p>
+          <p *ngIf="resume.parsed_data?.contact?.email">
+            <strong>Email:</strong> {{ resume.parsed_data.contact.email }}
+          </p>
+          <p *ngIf="resume.parsed_data?.contact?.phone">
+            <strong>Phone:</strong> {{ resume.parsed_data.contact.phone }}
+          </p>
+        </div>
+
+        <div class="resume-actions">
+          <button type="button" class="action-button edit" (click)="editResume(resume.id)">Edit</button>
+          <button type="button" class="action-button delete" (click)="deleteResume(resume.id)">Delete</button>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>

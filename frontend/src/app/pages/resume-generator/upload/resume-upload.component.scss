@@ -1,0 +1,365 @@
+/* Upload Component Styles */
+
+.upload {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 28px 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+
+  header {
+    margin-bottom: 24px;
+
+    .eyebrow {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #666;
+      margin: 0 0 8px 0;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin: 0 0 8px 0;
+      color: #1a1a1a;
+    }
+
+    .muted {
+      font-size: 14px;
+      color: #999;
+      margin: 0;
+    }
+  }
+
+  .model-selector {
+    margin-bottom: 24px;
+    padding: 16px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      .label-text {
+        font-weight: 600;
+        font-size: 14px;
+        color: #1a1a1a;
+      }
+
+      select {
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+        font-family: inherit;
+        cursor: pointer;
+        background: white;
+        transition: border-color 0.2s;
+
+        &:hover {
+          border-color: #0066cc;
+        }
+
+        &:focus {
+          outline: none;
+          border-color: #0066cc;
+          box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+        }
+
+        &:disabled {
+          background: #f0f0f0;
+          cursor: not-allowed;
+          opacity: 0.6;
+        }
+
+        option {
+          padding: 8px;
+        }
+
+        optgroup {
+          font-weight: 600;
+          padding: 8px;
+        }
+      }
+    }
+
+    .model-hint {
+      font-size: 12px;
+      color: #666;
+      margin: 8px 0 0 0;
+      font-style: italic;
+    }
+  }
+
+  .upload-container {
+    margin-bottom: 24px;
+  }
+
+  .dropzone {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 24px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: #fafafa;
+
+    &.active {
+      border-color: #0066cc;
+      background: #f0f5ff;
+    }
+
+    &.has-file {
+      background: #f5f5f5;
+    }
+
+    .dropzone-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+
+      .upload-icon {
+        color: #666;
+        width: 40px;
+        height: 40px;
+      }
+
+      h2 {
+        font-size: 18px;
+        font-weight: 600;
+        margin: 0;
+        color: #1a1a1a;
+      }
+
+      p {
+        margin: 0;
+        color: #999;
+        font-size: 14px;
+
+        &.hint {
+          font-size: 12px;
+          color: #ccc;
+        }
+      }
+    }
+
+    .file-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px;
+      background: white;
+      border-radius: 6px;
+
+      .file-icon {
+        color: #0066cc;
+        width: 48px;
+        height: 48px;
+        flex-shrink: 0;
+      }
+
+      .file-details {
+        text-align: left;
+        flex: 1;
+
+        strong {
+          display: block;
+          color: #1a1a1a;
+          margin-bottom: 4px;
+          word-break: break-all;
+        }
+
+        p {
+          margin: 0;
+          font-size: 12px;
+          color: #999;
+        }
+      }
+
+      .remove-btn {
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: #999;
+        cursor: pointer;
+        padding: 4px 8px;
+        transition: color 0.2s;
+
+        &:hover {
+          color: #d32f2f;
+        }
+      }
+    }
+  }
+
+  .error-message {
+    background: #fce4ec;
+    color: #c2185b;
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    font-size: 14px;
+
+    strong {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+  }
+
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 40px;
+    text-align: center;
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f0f0f0;
+      border-top-color: #0066cc;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    p {
+      margin: 0;
+      color: #999;
+      font-size: 14px;
+    }
+  }
+
+  footer {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .ui-button {
+    display: inline-block;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+
+    &.primary {
+      background: #0066cc;
+      color: white;
+
+      &:hover:not(:disabled) {
+        background: #0052a3;
+      }
+
+      &:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+    }
+
+    &.secondary {
+      background: white;
+      color: #0066cc;
+      border: 1px solid #0066cc;
+
+      &:hover:not(:disabled) {
+        background: #f0f5ff;
+      }
+    }
+  }
+}
+
+:host-context(body[data-theme='dark']) .upload {
+  header {
+    .eyebrow {
+      color: var(--text-secondary);
+    }
+
+    h1 {
+      color: var(--text-primary);
+    }
+
+    .muted {
+      color: var(--text-muted);
+    }
+  }
+
+  .model-selector,
+  .dropzone {
+    background: var(--surface);
+    border-color: var(--border-color);
+  }
+
+  .model-selector {
+    label .label-text,
+    .model-hint {
+      color: var(--text-secondary);
+    }
+
+    label select {
+      background: var(--surface-strong);
+      border-color: var(--border-color);
+      color: var(--text-primary);
+
+      &:disabled {
+        background: var(--surface-alt);
+      }
+    }
+  }
+
+  .dropzone {
+    &.active {
+      background: var(--blue-50);
+    }
+
+    &.has-file {
+      background: var(--surface-alt);
+    }
+
+    .dropzone-content {
+      .upload-icon,
+      p {
+        color: var(--text-secondary);
+      }
+
+      p.hint {
+        color: var(--text-muted);
+      }
+
+      h2 {
+        color: var(--text-primary);
+      }
+    }
+
+    .file-info {
+      background: var(--surface-strong);
+
+      .file-details {
+        strong {
+          color: var(--text-primary);
+        }
+
+        p {
+          color: var(--text-secondary);
+        }
+      }
+    }
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

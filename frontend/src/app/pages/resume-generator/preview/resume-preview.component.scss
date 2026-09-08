@@ -1,0 +1,377 @@
+/* Kanini-style Preview Component Styles */
+
+:host {
+  --kanini-primary: #1a73e8;
+  --kanini-gray: #5f6368;
+  --border-color: #dadce0;
+}
+
+.preview {
+  max-width: 1050px;
+  margin: auto;
+  display: grid;
+  gap: 20px;
+  padding: 20px;
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+
+    div {
+      flex: 1;
+    }
+
+    .eyebrow {
+      margin: 0;
+      color: var(--kanini-primary);
+      font-weight: 700;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    h1 {
+      margin: 2px 0;
+      font-size: 1.55rem;
+      font-weight: 700;
+      color: #202124;
+    }
+
+    p {
+      margin: 0;
+      color: var(--kanini-gray);
+      font-size: 14px;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+
+      button {
+        padding: 9px 14px;
+        border-radius: 6px;
+        border: 1px solid var(--kanini-primary);
+        background: #fff;
+        color: var(--kanini-primary);
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s ease;
+
+        &:hover:not(:disabled) {
+          background: rgba(26, 115, 232, 0.08);
+          border-color: var(--kanini-primary);
+        }
+
+        &.primary {
+          background: var(--kanini-primary);
+          color: #fff;
+          border-color: var(--kanini-primary);
+
+          &:hover:not(:disabled) {
+            background: #1665d8;
+          }
+        }
+
+        &.secondary {
+          background: #f8f9fa;
+          color: var(--kanini-primary);
+          border-color: var(--border-color);
+
+          &:hover:not(:disabled) {
+            background: #f1f3f4;
+          }
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+
+  .document {
+    overflow: hidden;
+    background: #eef1f5;
+    padding: 24px;
+    min-height: 300px;
+
+    // The preview uses the same document CSS that Chromium prints to PDF.
+    ::ng-deep {
+      .resume-page {
+        max-width: 100%;
+      }
+    }
+  }
+
+  .status {
+    padding: 30px;
+    text-align: center;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--kanini-gray);
+    font-size: 14px;
+
+    p {
+      margin: 0 0 16px 0;
+    }
+
+    button {
+      padding: 8px 16px;
+      border: 1px solid var(--kanini-primary);
+      background: #fff;
+      color: var(--kanini-primary);
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+
+      &:hover {
+        background: rgba(26, 115, 232, 0.08);
+      }
+    }
+
+    &.error {
+      background: #fce4ec;
+      border-color: #c2185b;
+      color: #c2185b;
+
+      p {
+        color: #c2185b;
+      }
+
+      button {
+        border-color: #c2185b;
+        color: #c2185b;
+
+        &:hover {
+          background: rgba(194, 24, 91, 0.08);
+        }
+      }
+    }
+  }
+
+  footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+
+    button {
+      padding: 9px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--kanini-primary);
+      background: #fff;
+      color: var(--kanini-primary);
+      transition: all 0.2s;
+
+      &:hover:not(:disabled) {
+        background: rgba(26, 115, 232, 0.08);
+      }
+
+      &.docx {
+        background: #f8f9fa;
+        border-color: var(--border-color);
+        color: #202124;
+
+        &:hover {
+          background: #f1f3f4;
+          border-color: var(--kanini-primary);
+        }
+      }
+
+      &.pdf {
+        background: var(--kanini-primary);
+        color: #fff;
+        border-color: var(--kanini-primary);
+
+        &:hover {
+          background: #1665d8;
+        }
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  .download-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+
+    .download-modal-content {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      min-width: 300px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      animation: slideUp 0.3s ease;
+
+      h3 {
+        margin: 0 0 16px 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #202124;
+      }
+
+      button {
+        display: block;
+        width: 100%;
+        padding: 12px 16px;
+        margin-bottom: 8px;
+        border: 1px solid var(--border-color);
+        background: #f8f9fa;
+        color: #202124;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        &:hover {
+          background: #f1f3f4;
+          border-color: var(--kanini-primary);
+          color: var(--kanini-primary);
+        }
+      }
+    }
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 600px) {
+  .preview {
+    header {
+      flex-direction: column;
+      align-items: flex-start;
+
+      .actions {
+        width: 100%;
+        flex-direction: column;
+
+        button {
+          width: 100%;
+        }
+      }
+    }
+
+    .document {
+      padding: 8px;
+    }
+
+    footer {
+      flex-direction: column;
+
+      button {
+        width: 100%;
+      }
+    }
+  }
+}
+
+:host-context(body[data-theme='dark']) .preview {
+  header {
+    h1 {
+      color: var(--text-primary);
+    }
+
+    p {
+      color: var(--text-secondary);
+    }
+
+    .actions button {
+      background: var(--surface-strong);
+      border-color: var(--border-color);
+
+      &.primary {
+        background: var(--kanini-primary);
+      }
+
+      &.secondary {
+        background: var(--surface-strong);
+      }
+    }
+  }
+
+  .document {
+    background: var(--surface);
+  }
+
+  .status {
+    background: var(--surface);
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+
+    button {
+      background: var(--surface-strong);
+    }
+  }
+
+  footer {
+    border-color: var(--border-color);
+
+    button {
+      background: var(--surface-strong);
+
+      &.docx {
+        background: var(--surface-strong);
+        border-color: var(--border-color);
+        color: var(--text-primary);
+      }
+    }
+  }
+
+  .download-modal-content {
+    background: var(--surface-strong);
+
+    h3 {
+      color: var(--text-primary);
+    }
+
+    button {
+      background: var(--surface-alt);
+      border-color: var(--border-color);
+      color: var(--text-primary);
+
+      &:hover {
+        background: var(--blue-50);
+      }
+    }
+  }
+}

@@ -1,0 +1,143 @@
+:host {
+  display: block;
+}
+
+.success-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 40px 20px;
+}
+
+.success-icon {
+  margin-bottom: 16px;
+}
+
+h1 {
+  text-align: center;
+  color: #1e293b;
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.subtitle {
+  text-align: center;
+  color: #64748b;
+  font-size: 16px;
+  margin: 0;
+  max-width: 400px;
+}
+
+.summary-grid {
+  width: 100%;
+  max-width: 600px;
+  padding: 24px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.summary-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.summary-row:last-child {
+  margin-bottom: 0;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.summary-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summary-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  word-break: break-word;
+}
+
+.action-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.additional-actions {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+.link-text {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.link-text:hover {
+  text-decoration: underline;
+}
+
+.separator {
+  margin: 0 8px;
+  color: #cbd5e1;
+}
+
+body[data-theme='dark'] h1,
+body[data-theme='dark'] .summary-value {
+  color: var(--text-primary);
+}
+
+body[data-theme='dark'] .subtitle,
+body[data-theme='dark'] .summary-label {
+  color: var(--text-secondary);
+}
+
+body[data-theme='dark'] .summary-grid {
+  background: var(--surface);
+  border-color: var(--border-color);
+}
+
+body[data-theme='dark'] .separator {
+  color: var(--text-muted);
+}
+
+@media (max-width: 640px) {
+  .success-container {
+    padding: 24px 16px;
+  }
+
+  h1 {
+    font-size: 24px;
+  }
+
+  .summary-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .action-row {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .action-btn {
+    width: 100%;
+  }
+}

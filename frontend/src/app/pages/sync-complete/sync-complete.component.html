@@ -1,0 +1,59 @@
+  <section *ngIf="syncStatus as status; else loadingState">
+    <article class="card">
+      <div class="state-chip" [class.success]="isSuccessful" [class.failed]="!isSuccessful">
+        {{ isSuccessful ? 'Sync Completed' : 'Sync Failed' }}
+      </div>
+
+      <h1>Candidate Sync Summary</h1>
+      <p class="page-sub">Review the result of your latest Zoho Recruit synchronization run.</p>
+
+      <div class="summary-grid summary-grid-5">
+        <div class="summary-item">
+          <div class="summary-value">{{ status.records_fetched }}</div>
+          <div class="summary-label">Candidates Retrieved</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-value">{{ status.records_new }}</div>
+          <div class="summary-label">New Records</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-value">{{ status.records_updated }}</div>
+          <div class="summary-label">Updated Records</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-value">{{ status.status | titlecase }}</div>
+          <div class="summary-label">Status</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-value">{{ status.normalized_records }}</div>
+          <div class="summary-label">Normalized Fields</div>
+        </div>
+      </div>
+
+      <div class="normalization-card" *ngIf="status.normalization_examples.length > 0">
+        <h2>Normalization Examples</h2>
+        <div class="chips-grid">
+          <div class="mapping-chip" *ngFor="let example of status.normalization_examples">
+            <span class="field-name">{{ example.field }}</span>
+            <span class="arrow">{{ example.raw_value }} -> {{ example.normalized_value }}</span>
+          </div>
+        </div>
+      </div>
+
+      <p class="error-text" *ngIf="status.error_message">{{ status.error_message }}</p>
+
+      <div class="btn-row">
+        <a class="btn btn-primary" routerLink="/candidates">View Candidates</a>
+        <a class="btn btn-primary" routerLink="/sync-candidates">Run Sync Again</a>
+        <a class="btn btn-secondary" routerLink="/dashboard">Back to Dashboard</a>
+      </div>
+    </article>
+  </section>
+
+  <ng-template #loadingState>
+    <section>
+      <article class="card">
+        <p class="text-muted">Loading sync summary...</p>
+      </article>
+    </section>
+  </ng-template>

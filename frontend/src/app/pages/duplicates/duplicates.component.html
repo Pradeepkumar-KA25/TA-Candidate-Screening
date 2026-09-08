@@ -1,0 +1,100 @@
+  <section>
+    <article class="card summary-card">
+      <div class="card-head summary-head">
+        <div>
+          <p>Possible duplicate records grouped by Job Description.</p>
+        </div>
+      </div>
+
+      <div class="summary-grid summary-grid-duplicates">
+        <article class="summary-item">
+          <strong>{{ summary.job_descriptions_reviewed }}</strong>
+          <span>Job Descriptions Reviewed</span>
+        </article>
+        <article class="summary-item">
+          <strong>{{ summary.possible_duplicates }}</strong>
+          <span>Possible Duplicates</span>
+        </article>
+        <article class="summary-item">
+          <strong>{{ summary.no_duplicate_signal }}</strong>
+          <span>No Duplicate Signal</span>
+        </article>
+      </div>
+    </article>
+
+    <article class="card" *ngIf="loading">
+      <p class="muted">Loading duplicate review records...</p>
+    </article>
+
+    <article class="card" *ngIf="!loading && error">
+      <p class="muted">{{ error }}</p>
+    </article>
+
+    <ng-container *ngIf="!loading && !error">
+      <article class="jd-group" *ngFor="let group of groups">
+        <div class="jd-group-header">
+          <h3>{{ safeText(group.jd_title) }}</h3>
+          <span class="jd-tag">{{ formatJdLabel(group) }}</span>
+        </div>
+
+        <article class="card" *ngIf="group.duplicate_count === 0">
+          <p class="jd-empty-note">No duplicate signals found among candidates filtered for this Job Description.</p>
+        </article>
+
+        <article class="card" *ngFor="let item of group.items">
+          <div class="card-head">
+            <div>
+              <h2>{{ safeName(item.candidate.full_name) }}</h2>
+              <p>
+                Possible matching record: {{ safeName(item.matched_candidate.full_name) }} · Match Basis:
+                {{ formatMatchBasis(item.match_basis) }}
+              </p>
+            </div>
+            <div class="status-block">
+              <span class="status-pill" [class.status-pill-reviewed]="isReviewed(item)">{{ statusLabel(item) }}</span>
+              <span class="confidence-text">Confidence {{ formatConfidence(item.confidence) }}</span>
+            </div>
+          </div>
+
+          <div class="compare-grid">
+            <article class="compare-card">
+              <h3>{{ safeName(item.candidate.full_name) }} · {{ safeText(item.candidate.zoho_candidate_id) }}</h3>
+              <p><strong>Name:</strong> {{ safeName(item.candidate.full_name) }}</p>
+              <p><strong>Email:</strong> {{ safeText(item.candidate.email) }}</p>
+              <p><strong>Phone:</strong> {{ safeText(item.candidate.phone) }}</p>
+              <p><strong>Company:</strong> {{ safeText(item.candidate.current_company) }}</p>
+              <p><strong>Experience:</strong> {{ safeText(item.candidate.total_experience_years?.toString()) }}</p>
+              <a [routerLink]="['/candidates', item.candidate.id]" class="btn btn-ghost btn-sm view-btn">View Candidate</a>
+            </article>
+
+            <article class="compare-card">
+              <h3>{{ safeName(item.matched_candidate.full_name) }} · {{ safeText(item.matched_candidate.zoho_candidate_id) }}</h3>
+              <p><strong>Name:</strong> {{ safeName(item.matched_candidate.full_name) }}</p>
+              <p><strong>Email:</strong> {{ safeText(item.matched_candidate.email) }}</p>
+              <p><strong>Phone:</strong> {{ safeText(item.matched_candidate.phone) }}</p>
+              <p><strong>Company:</strong> {{ safeText(item.matched_candidate.current_company) }}</p>
+              <p><strong>Experience:</strong> {{ safeText(item.matched_candidate.total_experience_years?.toString()) }}</p>
+              <a [routerLink]="['/candidates', item.matched_candidate.id]" class="btn btn-ghost btn-sm view-btn">View Candidate</a>
+            </article>
+          </div>
+
+          <div class="review-row">
+            <p class="review-note" *ngIf="item.reviewed_at">Reviewed and removed from follow-up on this duplicate pair.</p>
+            <button
+              type="button"
+              class="btn btn-primary review-btn"
+              [disabled]="isReviewed(item) || reviewingIds.has(item.id)"
+              (click)="markAsReviewed(item)"
+            >
+              {{ isReviewed(item) ? 'Reviewed' : reviewingIds.has(item.id) ? 'Updating...' : 'Mark as Reviewed' }}
+            </button>
+          </div>
+        </article>
+      </article>
+    </ng-container>
+
+    <div class="action-row">
+      <a routerLink="/ranking" class="btn btn-primary">Continue to Ranking</a>
+      <a routerLink="/candidates" class="btn btn-secondary">Back to Candidates</a>
+    </div>
+  </section>

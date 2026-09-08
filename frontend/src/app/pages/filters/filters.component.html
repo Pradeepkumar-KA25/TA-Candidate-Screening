@@ -1,0 +1,168 @@
+  <section>
+    <div class="page-header">
+      <div>
+        <p class="page-sub">Build advanced criteria and apply to Candidates page in one step.</p>
+      </div>
+    </div>
+
+    <article class="card">
+      <div class="card-header"><h2>Create Job Description</h2></div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>JD Code</label>
+          <input class="form-control" type="text" [formControl]="createJdForm.controls.jdCode" placeholder="e.g. JD-2026-250" />
+        </div>
+        <div class="form-group" style="grid-column: span 2;">
+          <label>JD Title</label>
+          <input class="form-control" type="text" [formControl]="createJdForm.controls.title" placeholder="e.g. Senior Backend Engineer" />
+        </div>
+        <div class="form-group" style="grid-column: span 3;">
+          <label>Required Skills (comma separated)</label>
+          <input class="form-control" type="text" [formControl]="createJdForm.controls.requiredSkills" placeholder="e.g. Python, FastAPI, SQL" />
+        </div>
+      </div>
+      <div class="btn-row" style="margin-top: 12px;">
+        <button type="button" class="btn btn-primary" [disabled]="jdCreateInProgress" (click)="createJobDescription()">
+          {{ jdCreateInProgress ? 'Creating...' : 'Create JD' }}
+        </button>
+      </div>
+      <p class="modal-inline-error" *ngIf="jdCreateValidationMessage">{{ jdCreateValidationMessage }}</p>
+      <p class="modal-inline-error" *ngIf="jdCreateApiMessage">{{ jdCreateApiMessage }}</p>
+      <p class="jd-create-success" *ngIf="jdCreateSuccessMessage">{{ jdCreateSuccessMessage }}</p>
+    </article>
+
+    <article class="card">
+      <div class="card-header"><h2>Basic Filters</h2></div>
+      <div class="form-grid">
+        <div class="form-group" style="grid-column: span 3;">
+          <label>Job Description</label>
+          <select class="form-control" [formControl]="filterForm.controls.jdId">
+            <option value="any">Any / No JD</option>
+            <option *ngFor="let jd of jobDescriptions" [value]="jd.id">{{ jd.title }} - {{ jd.jd_code }}</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column: span 3;">
+          <label>Skills to Match Against JD</label>
+          <input class="form-control" type="text" [formControl]="filterForm.controls.skills" placeholder="e.g. Java, Spring Boot" />
+        </div>
+        <div class="form-group">
+          <label>Experience - Minimum</label>
+          <input class="form-control" type="number" min="0" [formControl]="filterForm.controls.experienceMin" />
+        </div>
+        <div class="form-group">
+          <label>Experience - Maximum</label>
+          <input class="form-control" type="number" min="0" [formControl]="filterForm.controls.experienceMax" />
+        </div>
+        <div class="form-group">
+          <label>Current Location</label>
+          <input class="form-control" type="text" [formControl]="filterForm.controls.location" />
+        </div>
+        <div class="form-group">
+          <label>Preferred Location</label>
+          <input class="form-control" type="text" [formControl]="filterForm.controls.preferredLocation" />
+        </div>
+        <div class="form-group">
+          <label>Notice Period Max (Days)</label>
+          <input class="form-control" type="number" min="0" [formControl]="filterForm.controls.noticePeriodMax" />
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select class="form-control" [formControl]="filterForm.controls.status">
+            <option value="any">Any</option>
+            <option value="active">Active</option>
+            <option value="open_to_opportunities">Open to Opportunities</option>
+          </select>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="card-header"><h2>Advanced Filters</h2></div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Degree</label>
+          <input class="form-control" type="text" [formControl]="filterForm.controls.degree" />
+        </div>
+        <div class="form-group">
+          <label>Certification</label>
+          <input class="form-control" type="text" [formControl]="filterForm.controls.certification" />
+        </div>
+        <div class="form-group">
+          <label>Resume Updated Since (Days)</label>
+          <input class="form-control" type="number" min="0" [formControl]="filterForm.controls.resumeUpdatedSince" />
+        </div>
+        <div class="form-group">
+          <label>Source</label>
+          <input class="form-control" type="text" [formControl]="filterForm.controls.source" />
+        </div>
+        <div class="form-group">
+          <label>Relevant Experience (Min Years)</label>
+          <input class="form-control" type="number" min="0" [formControl]="filterForm.controls.relevantExperience" />
+        </div>
+        <div class="form-group">
+          <label>Current CTC (Min)</label>
+          <input class="form-control" type="number" min="0" [formControl]="filterForm.controls.currentCtc" />
+        </div>
+        <div class="form-group">
+          <label>Expected CTC (Min)</label>
+          <input class="form-control" type="number" min="0" [formControl]="filterForm.controls.expectedCtc" />
+        </div>
+        <div class="form-group">
+          <label>Previous Company</label>
+          <input class="form-control" type="text" [formControl]="filterForm.controls.previousCompany" />
+        </div>
+        <div class="form-group">
+          <label>Employment Status</label>
+          <input class="form-control" type="text" [formControl]="filterForm.controls.employmentStatus" />
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="card-header"><h2>Filter Summary</h2></div>
+      <div class="detail-grid" *ngIf="summaryItems.length > 0">
+        <div class="detail-row" *ngFor="let item of summaryItems">
+          <dt>{{ item.label }}</dt>
+          <dd>{{ item.value }}</dd>
+        </div>
+      </div>
+      <p class="text-muted" *ngIf="summaryItems.length === 0">No criteria selected yet.</p>
+    </article>
+
+    <p class="filter-validation" *ngIf="applyValidationMessage">{{ applyValidationMessage }}</p>
+    <p *ngIf="duplicateWarning" class="save-warning">{{ duplicateWarning }}</p>
+
+    <div class="btn-row filter-actions">
+      <button type="button" class="btn btn-secondary" (click)="applyFilters()">Apply Filters</button>
+      <button type="button" class="btn btn-secondary" (click)="openSaveModal()">Save Filter</button>
+      <button type="button" class="btn btn-secondary" (click)="clearFilters()">Clear Filters</button>
+      <a routerLink="/candidates" class="btn btn-secondary">Back to Candidates</a>
+    </div>
+  </section>
+
+  <div class="modal-overlay" [class.is-open]="isSaveModalOpen" *ngIf="isSaveModalOpen">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="save-filter-title">
+      <h3 id="save-filter-title">Save Filter Template</h3>
+      <p class="modal-sub">Save current criteria and selected JD for quick reuse.</p>
+
+      <div class="form-group">
+        <label>Template Name</label>
+        <input class="form-control" type="text" [formControl]="saveNameControl" placeholder="e.g. Java Backend Shortlist" />
+        <p class="modal-inline-error" *ngIf="saveNameValidationMessage">{{ saveNameValidationMessage }}</p>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 0;">
+        <label>Selected JD</label>
+        <p class="text-muted">{{ selectedJdLabel }}</p>
+      </div>
+
+      <p class="modal-inline-error" *ngIf="saveApiMessage">{{ saveApiMessage }}</p>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" (click)="closeSaveModal()">Cancel</button>
+        <button type="button" class="btn btn-primary" [disabled]="savingInProgress" (click)="confirmSaveFilter()">
+          {{ savingInProgress ? 'Saving...' : 'Save Filter' }}
+        </button>
+      </div>
+    </div>
+  </div>

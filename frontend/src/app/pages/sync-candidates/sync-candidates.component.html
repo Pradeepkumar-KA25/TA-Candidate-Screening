@@ -1,0 +1,76 @@
+  <section>
+    <div class="page-header">
+      <div>
+        <p class="page-sub">Retrieve the latest candidate profiles from the connected Zoho Recruit account.</p>
+      </div>
+    </div>
+
+    <article class="card">
+      <div class="two-col">
+        <div class="connection-card">
+          <h2>Connection Details</h2>
+          <dl>
+            <div class="detail-row"><dt>Integration</dt><dd>Zoho Recruit</dd></div>
+            <div class="detail-row"><dt>Sync Type</dt><dd>{{ formatLabel(zohoStatus?.sync_type ?? 'manual') }}</dd></div>
+            <div class="detail-row"><dt>Sync Frequency</dt><dd>On demand</dd></div>
+            <div class="detail-row"><dt>Access</dt><dd>{{ formatLabel(zohoStatus?.access_level ?? 'read_only') }}</dd></div>
+            <div class="detail-row sync-time"><dt>{{ relativeSyncTime }}</dt><dd>{{ formattedSyncTime }}</dd></div>
+          </dl>
+        </div>
+
+        <div class="connection-card">
+          <h2>Sync Overview</h2>
+          <div class="steps-list">
+            <div class="step-item" [class.complete]="isConnected"><span class="step-num">{{ isConnected ? '✓' : '○' }}</span><span class="step-text">Connected</span></div>
+            <div class="step-item" [class.complete]="stepState === 'completed'" [class.current]="stepState === 'running'"><span class="step-num">{{ stepState === 'completed' ? '✓' : stepState === 'running' ? '⏳' : '○' }}</span><span class="step-text">Fetched</span></div>
+            <div class="step-item" [class.complete]="stepState === 'completed'" [class.current]="stepState === 'running'"><span class="step-num">{{ stepState === 'completed' ? '✓' : stepState === 'running' ? '⏳' : '○' }}</span><span class="step-text">Normalizing</span></div>
+            <div class="step-item" [class.complete]="stepState === 'completed'"><span class="step-num">{{ stepState === 'completed' ? '✓' : '○' }}</span><span class="step-text">Preparing</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sync-preview">
+        <div class="section-heading"><h2>Sync Result Preview</h2><span>Estimated from the last completed sync</span></div>
+        <div class="preview-grid">
+          <div><span>Candidates to fetch</span><strong>{{ previewSync?.records_fetched ?? 200 }}</strong></div>
+          <div><span>New</span><strong>{{ previewSync?.records_new ?? 0 }}</strong></div>
+          <div><span>Updated</span><strong>{{ previewSync?.records_updated ?? 0 }}</strong></div>
+          <div><span>Duplicates</span><strong>{{ previewSync?.duplicate_matches ?? 0 }}</strong></div>
+        </div>
+      </div>
+
+      <div class="info-box">
+        Read-only sync. No candidate data will be modified in Zoho Recruit.
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn btn-primary" [disabled]="!isConnected || syncInProgress" (click)="onStartSync()">
+          {{ syncInProgress ? 'Syncing Candidates...' : 'Sync Candidates' }}
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="goBack()">Back</button>
+        <button type="button" class="history-link" (click)="toggleSyncHistory()">{{ showSyncHistory ? 'Hide Sync History' : 'View Sync History' }}</button>
+      </div>
+
+      <div class="sync-result" *ngIf="lastSyncStatus as progress" [class.failed]="progress.status === 'failed'">
+        <strong>{{ progress.status === 'completed' ? 'Sync complete' : 'Sync status: ' + formatLabel(progress.status) }}</strong>
+        <span>✓ {{ progress.records_fetched }} synced</span>
+        <span>⚠ {{ progress.duplicate_matches }} duplicates</span>
+        <span>✕ {{ progress.records_failed }} failed</span>
+        <a *ngIf="progress.status === 'completed'" [routerLink]="['/sync-complete', progress.sync_id]">View Details</a>
+      </div>
+
+      <div class="history-panel" *ngIf="showSyncHistory">
+        <h2>Sync History</h2>
+        <div class="history-empty" *ngIf="syncHistory.length === 0">No syncs have been run yet.</div>
+        <div class="history-list" *ngIf="syncHistory.length > 0">
+          <div class="history-item" *ngFor="let sync of syncHistory">
+            <div><strong>{{ formatLabel(sync.status) }}</strong><span>{{ sync.started_at | date: 'medium' }}</span></div>
+            <span>{{ sync.records_fetched }} records</span><span>{{ syncDuration(sync) }}</span><span>{{ sync.error_message || 'No errors' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <p class="helper-text" *ngIf="!isConnected">Sync action is disabled until Zoho Recruit is connected.</p>
+      <p class="helper-text" *ngIf="syncErrorMessage">{{ syncErrorMessage }}</p>
+    </article>
+  </section>

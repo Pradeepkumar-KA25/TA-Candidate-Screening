@@ -1,0 +1,76 @@
+:host {
+  display: block;
+}
+
+.card {
+  margin-bottom: 16px;
+}
+
+.saved-template-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.saved-template-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-sm);
+  background: var(--slate-50);
+}
+
+.saved-template-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--slate-900);
+}
+
+.saved-template-meta {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--slate-600);
+}
+
+.saved-template-summary {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--slate-700);
+}
+
+.saved-template-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.saved-template-date {
+  font-size: 12px;
+  color: var(--slate-400);
+  white-space: nowrap;
+}
+
+.modal-inline-error {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--red-600);
+  font-weight: 600;
+}
+
+.save-warning {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--amber-600);
+  font-weight: 600;
+}
+
+.jd-create-success {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #166534;
+  font-weight: 600;
+}

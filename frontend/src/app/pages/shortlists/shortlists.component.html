@@ -1,0 +1,98 @@
+  <section>
+    <div class="page-header">
+      <div>
+        <p class="page-sub">View shortlisted candidates by Job Description and download full Excel exports anytime.</p>
+      </div>
+      <span class="badge badge-info">{{ shortlists.length }} Shortlist<span *ngIf="shortlists.length !== 1">s</span></span>
+    </div>
+
+    <article class="card">
+      <div class="filter-row">
+        <label class="form-group jd-filter">
+          <span>Filter by Job Description</span>
+          <select class="form-control" [value]="selectedJdId" (change)="onJdChange(($any($event.target)).value)">
+            <option value="" disabled>Select JD to view shortlisted candidates</option>
+            <option *ngFor="let jd of jobDescriptions" [value]="jd.id">{{ jd.title }} - {{ jd.jd_code }}</option>
+          </select>
+        </label>
+      </div>
+    </article>
+
+    <div *ngIf="errorMessage" class="error-banner" role="alert">{{ errorMessage }}</div>
+
+    <article class="card" *ngIf="loading">
+      <p class="muted">Loading shortlists...</p>
+    </article>
+
+    <article class="card" *ngIf="!loading && !selectedJdId">
+      <h2>Select a Job Description</h2>
+      <p class="muted">Choose a Job Description to view its shortlisted candidates.</p>
+    </article>
+
+    <article class="card" *ngIf="!loading && selectedJdId && shortlists.length === 0">
+      <h2>No shortlists found</h2>
+      <p class="muted">Shortlist candidates from the Candidates or Ranking page, then they will appear here by JD.</p>
+      <div class="action-row">
+        <a routerLink="/candidates" class="btn btn-primary">Go to Candidates</a>
+        <a routerLink="/ranking" class="btn btn-secondary">Go to Ranking</a>
+      </div>
+    </article>
+
+    <article class="card" *ngFor="let shortlist of shortlists">
+      <div class="card-header shortlist-head">
+        <div>
+          <h2>{{ shortlist.jd_title }}</h2>
+          <p class="card-sub">{{ shortlist.jd_code }} • {{ shortlist.candidate_count }} candidates • Created {{ formatDate(shortlist.created_at) }}</p>
+        </div>
+        <button
+          class="btn btn-primary"
+          [disabled]="downloadingShortlistId === shortlist.id"
+          (click)="downloadShortlist(shortlist.id)"
+        >
+          {{ downloadingShortlistId === shortlist.id ? 'Downloading...' : 'Download Excel' }}
+        </button>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Candidate</th>
+              <th>Experience</th>
+              <th>Skills</th>
+              <th>Location</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let candidate of shortlist.candidates">
+              <td>
+                <div class="candidate-name" [title]="safeName(candidate.full_name)">{{ safeName(candidate.full_name) }}</div>
+                <div class="candidate-meta" [title]="safeText(candidate.zoho_candidate_id)">{{ safeText(candidate.zoho_candidate_id) }}</div>
+              </td>
+              <td>{{ candidate.total_experience_years ?? '—' }} years</td>
+              <td class="skills-cell" [title]="skillsText(candidate.skills)">{{ skillsText(candidate.skills) }}</td>
+              <td [title]="safeText(candidate.current_location)">{{ safeText(candidate.current_location) }}</td>
+              <td><span class="status-badge">{{ safeText(candidate.status) }}</span></td>
+              <td>
+                <div class="row-actions">
+                  <a [routerLink]="['/candidates', candidate.id]" class="icon-action" title="View candidate" aria-label="View candidate">&#128065;</a>
+                  <button
+                    type="button"
+                    class="icon-action icon-action-danger"
+                    [disabled]="isRemovingCandidate(shortlist.id, candidate.id)"
+                    (click)="removeCandidate(shortlist.id, candidate.id)"
+                    title="Remove candidate"
+                    aria-label="Remove candidate"
+                  >
+                    {{ isRemovingCandidate(shortlist.id, candidate.id) ? '...' : '&#128465;' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </section>
