@@ -142,4 +142,32 @@ export class CandidateService {
       finalize(() => this.loadingSubject.next(false))
     );
   }
+
+  deleteCandidate(candidateId: string): Observable<void> {
+    this.errorSubject.next(null);
+
+    return this.httpClient.delete<void>(`${this.apiBaseUrl}/candidates/${candidateId}`).pipe(
+      tap(() => this.errorSubject.next(null)),
+      catchError((error) => {
+        this.errorSubject.next(error?.error?.message || 'Unable to delete candidate');
+        return of(void 0);
+      })
+    );
+  }
+
+  deleteCandidatesBatch(candidateIds: string[]): Observable<{ deleted_count: number; message: string }> {
+    this.errorSubject.next(null);
+
+    return this.httpClient
+      .post<{ deleted_count: number; message: string }>(`${this.apiBaseUrl}/candidates/batch/delete`, {
+        candidate_ids: candidateIds,
+      })
+      .pipe(
+        tap(() => this.errorSubject.next(null)),
+        catchError((error) => {
+          this.errorSubject.next(error?.error?.message || 'Unable to delete candidates');
+          return of({ deleted_count: 0, message: 'Error deleting candidates' });
+        })
+      );
+  }
 }

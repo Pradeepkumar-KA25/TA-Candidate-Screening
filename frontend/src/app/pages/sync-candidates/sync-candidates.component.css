@@ -206,6 +206,108 @@ dd {
   font-size: 13px;
 }
 
+.auto-sync-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--slate-200);
+}
+
+.auto-sync-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.auto-sync-toggle .toggle-btn {
+  width: 60px;
+  height: 32px;
+  border: none;
+  border-radius: 16px;
+  background-color: #cbd5e1;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 4px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.auto-sync-toggle .toggle-btn.active {
+  background-color: var(--blue-600);
+  justify-content: flex-end;
+  padding-left: 0;
+  padding-right: 4px;
+}
+
+.auto-sync-toggle .toggle-indicator {
+  width: 24px;
+  height: 24px;
+  background-color: white;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.auto-sync-toggle .toggle-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: white;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  letter-spacing: 0.5px;
+}
+
+.auto-sync-toggle .toggle-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.auto-sync-toggle .toggle-text {
+  font-weight: 600;
+  color: var(--slate-900);
+  font-size: 14px;
+}
+
+.auto-sync-info {
+  margin: 8px 0 0;
+  color: var(--slate-600);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.next-sync-time {
+  margin: 8px 0 0;
+  color: var(--blue-600);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+:host-context(body[data-theme='dark']) .auto-sync-section {
+  border-top-color: #354255;
+}
+
+:host-context(body[data-theme='dark']) .auto-sync-toggle .toggle-text {
+  color: #F1F5F9;
+}
+
+:host-context(body[data-theme='dark']) .auto-sync-toggle .toggle-btn {
+  background-color: #475569;
+}
+
+:host-context(body[data-theme='dark']) .auto-sync-info {
+  color: #8D9AAD;
+}
+
+:host-context(body[data-theme='dark']) .next-sync-time {
+  color: #60a5fa;
+}
+
 :host-context(body[data-theme='dark']) .sync-preview {
   background: #202A38;
   border-color: #354255;

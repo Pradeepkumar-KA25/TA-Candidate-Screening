@@ -15,7 +15,7 @@ class KaniniResumeRenderer:
     # Template 1 CSS (Format 1 - Letter size)
     TEMPLATE1_CSS = """@page { size: letter; margin: 1in 0 0; }
 html, body { margin: 0; padding: 0; background: #fff; }
-.kanini-logo { width: 40px; height: auto; margin: -10px 0 10px -10px; display: block; }
+.kanini-logo { width: 50px; height: auto; margin: -10px 0 10px -10px; display: block; }
 .resume-page { box-sizing: border-box; width: 8.5in; min-height: 11in; margin: 0 auto; padding: 1in; color: #000; font: 12pt/1.2 "Times New Roman", serif; background: #fff; }
 .resume-name { margin: 0 0 6pt; color: #000000; text-align: center; font: 700 12pt "Times New Roman", serif; text-transform: uppercase; }
 .resume-contact { margin: 0 0 12pt; text-align: center; font-size: 11pt; }
@@ -32,7 +32,7 @@ html, body { margin: 0; padding: 0; background: #fff; }
     # Template 2 CSS (Format 2 - A4 size, Deloitte style)
     TEMPLATE2_CSS = """@page { size: A4; margin: 1in 0 0; }
 html, body { margin: 0; padding: 0; background: #fff; }
-.kanini-logo { width: 40px; height: auto; margin: -10px 0 10px -10px; display: block; }
+.kanini-logo { width: 65px; height: auto; margin: -10px 0 10px -10px; display: block; }
 .resume-page { width: 210mm; min-height: 297mm; box-sizing: border-box; padding: 1in 12pt 18pt 46pt; margin: 0 auto; background: #fff; color: #000; font: 12pt/1.15 "Times New Roman", serif; }
 h1, h2, h3, h4 { color: #000000; font-size: 12pt; margin: 8pt 0 3pt; font-weight: 700; text-transform: uppercase; }
 h1 { text-align: center; margin: 0 0 14pt; }
@@ -350,7 +350,7 @@ ul { margin: 2pt 0 4pt 39pt; padding-left: 18pt; }
             preview_html = preview_html.replace(logo_match.group(0), "", 1)
             header_template = (
                 '<div style="width:100%; padding:18px 0 0 36px; box-sizing:border-box;">'
-                f'<img src="{logo_match.group(1)}" style="width:1.5cm; height:auto;">'
+                f'<img src="{logo_match.group(1)}" style="width:2cm; height:auto;">'
                 '</div>'
             )
 
@@ -440,7 +440,7 @@ ul { margin: 2pt 0 4pt 39pt; padding-left: 18pt; }
             def draw_logo(canvas, document):
                 if logo_image is None:
                     return
-                logo_size = cm * 1.5
+                logo_size = cm * 2
                 canvas.drawImage(
                     logo_image,
                     document.leftMargin - 10,
@@ -621,9 +621,9 @@ ul { margin: 2pt 0 4pt 39pt; padding-left: 18pt; }
             logo_path = Path(__file__).resolve().parent.parent.parent / "kanini_logo.png"
             if logo_path.exists():
                 try:
-                    # Add logo with smaller size (1.5cm - reduced from 2.5cm)
+                    # Add logo with slightly larger size (2cm for better visibility)
                     run = header.paragraphs[0].add_run()
-                    run.add_picture(str(logo_path), width=Cm(1.5))  # Reduced from 2.5cm
+                    run.add_picture(str(logo_path), width=Cm(2))  # Increased from 1.5cm
                 except Exception as e:
                     pass  # Logo optional
             

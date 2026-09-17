@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, catchError, finalize, of, switchMap, tap, timer } from 'rxjs';
 
-import { ZohoIntegrationStatus } from '../models/integration.models';
+import { AutoSyncSettings, ZohoIntegrationStatus } from '../models/integration.models';
 import { ApiConfigService } from '../config/api.config';
 
 @Injectable({
@@ -44,6 +44,22 @@ export class IntegrationService {
     );
   }
 
+  updateAutoSyncSettings(settings: AutoSyncSettings): Observable<ZohoIntegrationStatus> {
+    this.loadingSubject.next(true);
+
+    return this.httpClient.put<ZohoIntegrationStatus>(`${this.apiBaseUrl}/integrations/zoho/auto-sync`, settings).pipe(
+      tap((status) => {
+        this.statusSubject.next(status);
+        this.errorSubject.next(null);
+      }),
+      catchError((error) => {
+        this.errorSubject.next('Unable to update auto-sync settings');
+        throw error;
+      }),
+      finalize(() => this.loadingSubject.next(false))
+    );
+  }
+
   pollZohoStatus(intervalMs: number = 30000): Observable<ZohoIntegrationStatus> {
     return timer(0, intervalMs).pipe(switchMap(() => this.getZohoStatus()));
   }
@@ -55,8 +71,12 @@ export class IntegrationService {
       status: 'disconnected',
       access_level: 'read_only',
       sync_type: 'manual',
+      auto_sync_enabled: false,
+      auto_sync_interval_minutes: 5,
       last_successful_sync_at: null,
+      last_auto_sync_at: null,
       last_checked_at: new Date().toISOString(),
     };
   }
 }
+

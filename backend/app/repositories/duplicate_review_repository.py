@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, delete, func, select
 from sqlalchemy.orm import Session, aliased
 
 from app.models.candidate import Candidate
@@ -99,4 +99,13 @@ class DuplicateReviewRepository:
         self.session.commit()
         self.session.refresh(review)
         return review
+
+    def remove_candidate_reviews(self, candidate_id: UUID) -> int:
+        """Remove all duplicate reviews involving a candidate (as either candidate or matched). Returns count deleted."""
+        delete_statement = delete(DuplicateReview).where(
+            (DuplicateReview.candidate_id == candidate_id) | (DuplicateReview.matched_candidate_id == candidate_id)
+        )
+        result = self.session.execute(delete_statement)
+        self.session.commit()
+        return result.rowcount if result.rowcount else 0
 

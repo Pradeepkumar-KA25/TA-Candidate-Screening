@@ -12,10 +12,36 @@
           <dl>
             <div class="detail-row"><dt>Integration</dt><dd>Zoho Recruit</dd></div>
             <div class="detail-row"><dt>Sync Type</dt><dd>{{ formatLabel(zohoStatus?.sync_type ?? 'manual') }}</dd></div>
-            <div class="detail-row"><dt>Sync Frequency</dt><dd>On demand</dd></div>
+            <div class="detail-row"><dt>Sync Frequency</dt><dd>
+              <span *ngIf="!zohoStatus?.auto_sync_enabled">On demand</span>
+              <span *ngIf="zohoStatus?.auto_sync_enabled">Every {{ zohoStatus?.auto_sync_interval_minutes }} minutes</span>
+            </dd></div>
             <div class="detail-row"><dt>Access</dt><dd>{{ formatLabel(zohoStatus?.access_level ?? 'read_only') }}</dd></div>
             <div class="detail-row sync-time"><dt>{{ relativeSyncTime }}</dt><dd>{{ formattedSyncTime }}</dd></div>
           </dl>
+
+          <div class="auto-sync-section">
+            <div class="auto-sync-toggle">
+              <button 
+                class="toggle-btn"
+                [class.active]="zohoStatus?.auto_sync_enabled"
+                [disabled]="!isConnected || autoSyncToggling"
+                (click)="toggleAutoSync()"
+                [title]="autoSyncToggling ? 'Updating...' : 'Toggle auto sync'"
+              >
+                <span class="toggle-indicator"></span>
+                <span class="toggle-label">{{ zohoStatus?.auto_sync_enabled ? 'ON' : 'OFF' }}</span>
+              </button>
+              <span class="toggle-text">Auto Sync</span>
+            </div>
+            <p class="auto-sync-info" *ngIf="zohoStatus?.auto_sync_enabled">
+              Syncing automatically every {{ zohoStatus?.auto_sync_interval_minutes }} minutes
+            </p>
+            <p class="auto-sync-info" *ngIf="!zohoStatus?.auto_sync_enabled">
+              Manual sync only. Use the button below to sync manually.
+            </p>
+            <p class="next-sync-time">{{ nextSyncTime }}</p>
+          </div>
         </div>
 
         <div class="connection-card">

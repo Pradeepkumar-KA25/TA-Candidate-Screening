@@ -60,6 +60,8 @@ export class CandidatesComponent implements OnInit {
   selectedCandidateIds: Set<string> = new Set();
   selectedShortlistJdId: string | null = null;
   movingToShortlist = false;
+  deletingCandidates = false;
+  selectingAllCandidates = false;
   private advancedCriteria: {
     degree?: string;
     certification?: string;
@@ -317,7 +319,58 @@ export class CandidatesComponent implements OnInit {
       return;
     }
 
-    this.candidates.forEach((candidate) => this.selectedCandidateIds.add(candidate.id));
+    // If not all selected, load all candidates and select them
+    if (this.selectedCandidateIds.size === 0) {
+      this.selectingAllCandidates = true;
+
+      // Parse skills from comma-separated string to array
+      const skillsText = this.basicFilterForm.get('skills')?.value || '';
+      const skillsArray = skillsText
+        .split(',')
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0);
+      
+      // Build current query to maintain filters
+      const query: CandidateListQuery = {
+        page: 1,
+        pageSize: this.totalItems > 0 ? Math.min(this.totalItems, 10000) : 10000, // Load all candidates
+        q: this.searchTerm || undefined,
+        sortBy: this.sortBy || undefined,
+        sortOrder: this.sortOrder || undefined,
+        jdId: this.basicFilterForm.get('jdId')?.value === 'any' ? undefined : this.basicFilterForm.get('jdId')?.value,
+        skills: skillsArray.length > 0 ? skillsArray : undefined,
+        experienceMin: this.basicFilterForm.get('experienceMin')?.value ? Number(this.basicFilterForm.get('experienceMin')?.value) : undefined,
+        experienceMax: this.basicFilterForm.get('experienceMax')?.value ? Number(this.basicFilterForm.get('experienceMax')?.value) : undefined,
+        location: this.basicFilterForm.get('location')?.value || undefined,
+        preferredLocation: this.basicFilterForm.get('preferredLocation')?.value || undefined,
+        noticePeriodMax: this.basicFilterForm.get('noticePeriodMax')?.value ? Number(this.basicFilterForm.get('noticePeriodMax')?.value) : undefined,
+        status: this.basicFilterForm.get('status')?.value === 'any' ? undefined : this.basicFilterForm.get('status')?.value,
+        degree: this.advancedCriteria.degree,
+        certification: this.advancedCriteria.certification,
+        resumeUpdatedSince: this.advancedCriteria.resumeUpdatedSince,
+        source: this.advancedCriteria.source,
+        relevantExperience: this.advancedCriteria.relevantExperience,
+        currentCtc: this.advancedCriteria.currentCtc,
+        expectedCtc: this.advancedCriteria.expectedCtc,
+        previousCompany: this.advancedCriteria.previousCompany,
+        employmentStatus: this.advancedCriteria.employmentStatus,
+      };
+
+      this.candidateService
+        .loadCandidates(query)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (response) => {
+            this.selectedCandidateIds.clear();
+            response.items.forEach((candidate) => this.selectedCandidateIds.add(candidate.id));
+            this.selectingAllCandidates = false;
+          },
+          error: () => {
+            this.selectingAllCandidates = false;
+            this.errorMessage = 'Failed to select all candidates';
+          },
+        });
+    }
   }
 
   isCandidateSelected(candidateId: string): boolean {
@@ -329,11 +382,11 @@ export class CandidatesComponent implements OnInit {
   }
 
   isAllSelected(): boolean {
-    return this.candidates.length > 0 && this.selectedCandidateIds.size === this.candidates.length;
+    return this.totalItems > 0 && this.selectedCandidateIds.size === this.totalItems;
   }
 
   isIndeterminate(): boolean {
-    return this.selectedCandidateIds.size > 0 && this.selectedCandidateIds.size < this.candidates.length;
+    return this.selectedCandidateIds.size > 0 && this.selectedCandidateIds.size < this.totalItems;
   }
 
   async moveSelectedToShortlist(): Promise<void> {
@@ -355,6 +408,35 @@ export class CandidatesComponent implements OnInit {
       this.errorMessage = 'Unable to move selected candidates to shortlist. Please try again.';
     } finally {
       this.movingToShortlist = false;
+    }
+  }
+
+  async deleteSelectedCandidates(): Promise<void> {
+    if (this.selectedCandidateIds.size === 0 || this.deletingCandidates) {
+      return;
+    }
+
+    const count = this.selectedCandidateIds.size;
+    const confirmed = confirm(
+      `Are you sure you want to delete ${count} candidate${count !== 1 ? 's' : ''}? This action cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    this.deletingCandidates = true;
+    this.errorMessage = null;
+
+    try {
+      // Use batch delete endpoint which handles unlimited candidates
+      const deleteResponse = await firstValueFrom(
+        this.candidateService.deleteCandidatesBatch(Array.from(this.selectedCandidateIds))
+      );
+
+      this.selectedCandidateIds.clear();
+      this.loadCandidates(this.page, this.searchTerm);
+    } catch {
+      this.errorMessage = 'Unable to delete selected candidates. Please try again.';
+    } finally {
+      this.deletingCandidates = false;
     }
   }
 

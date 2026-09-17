@@ -121,3 +121,11 @@ class CandidateRepository:
 
         candidates = list(self.session.scalars(statement).all())
         return candidates, total_items
+
+    def delete(self, candidate_id: UUID) -> None:
+        """Delete a candidate by ID."""
+        statement = select(Candidate).where(Candidate.id == candidate_id)
+        candidate = self.session.scalar(statement)
+        if candidate:
+            self.session.delete(candidate)
+            self.session.commit()

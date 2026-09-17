@@ -347,6 +347,7 @@
 
 /* Animations */
 @keyframes fadeIn {
+  
   from {
     opacity: 0;
     transform: translateY(10px);
@@ -357,10 +358,13 @@
   }
 }
 
+.button-group {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 24px;
   flex-grow: 1;
 }
-
-.primary-button,
 .secondary-button {
   padding: 10px 24px;
   border: none;

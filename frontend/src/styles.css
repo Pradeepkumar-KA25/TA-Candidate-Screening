@@ -260,18 +260,19 @@ h1, h2, h3, h4 { color: var(--slate-900); font-weight: 700; letter-spacing: -0.0
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 8px 14px;
+  padding: 0px 8px 8px;
   border-bottom: 0;
   margin-bottom: 12px;
   min-height: 42px;
 }
 .sidebar-brand .brand-logo {
-  width: 118px;
-  height: 38px;
+  width: 140px;
+  height: 47px;
   object-fit: contain;
   flex-shrink: 0;
   display: block;
   margin-left: 2px;
+  transform: translateY(-5px);
 }
 .sidebar-toggle {
   width: 30px;
@@ -352,8 +353,8 @@ h1, h2, h3, h4 { color: var(--slate-900); font-weight: 700; letter-spacing: -0.0
   height: 38px;
 }
 .app-layout.sidebar-collapsed .brand-logo {
-  width: 52px;
-  height: 20px;
+  width: 65px;
+  height: 25px;
   margin: 0 auto;
 }
 .app-layout.sidebar-collapsed .brand-text,

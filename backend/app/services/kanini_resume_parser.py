@@ -4,6 +4,14 @@ import tempfile
 import logging
 from typing import Dict, List, Optional, Tuple
 
+from app.services.experience_extraction_enhancer import enhance_experience_list
+from app.services.multi_line_experience_parser import (
+    parse_experience_multiline,
+    parse_projects_multiline,
+    validate_and_enhance_experience,
+    validate_and_enhance_projects,
+)
+
 logger = logging.getLogger("kanini.resume")
 
 
@@ -1190,10 +1198,27 @@ def _parse_exp_block(block: List[str]) -> Optional[Dict]:
 
 
 def parse_experience(lines: List[str]) -> List[Dict]:
-    lines = _coalesce_exp_label_lines(lines)
-    blocks  = _split_exp_blocks(lines)
+    """Parse work experience entries using multi-line format first, then legacy parser as fallback."""
+    # Try the new multi-line parser first (handles Company + Location / Designation + Dates format)
+    multiline_exp = parse_experience_multiline(lines)
+    
+    if multiline_exp:
+        # If multi-line parser succeeded, validate and enhance with cross-field checks
+        multiline_exp = validate_and_enhance_experience(multiline_exp)
+        # Also apply the data quality enhancement (location/company/role validation)
+        multiline_exp = enhance_experience_list(multiline_exp)
+        return multiline_exp
+    
+    # Fallback to legacy parser if multi-line format didn't work
+    lines_coalesced = _coalesce_exp_label_lines(lines)
+    blocks = _split_exp_blocks(lines_coalesced)
     entries = [_parse_exp_block(b) for b in blocks]
-    return [e for e in entries if e and (e.get("title") or e.get("company"))]
+    entries = [e for e in entries if e and (e.get("title") or e.get("company"))]
+    
+    if entries:
+        entries = enhance_experience_list(entries)
+    
+    return entries
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1298,6 +1323,27 @@ def parse_list_section(lines: List[str]) -> List[str]:
 
 
 def parse_projects(lines: List[str]) -> List[Dict]:
+    """Parse projects using multi-line format first, then legacy parser as fallback."""
+    # Try the new multi-line parser first (handles Project Name + Client / Role + Dates format)
+    multiline_proj = parse_projects_multiline(lines)
+    
+    if multiline_proj:
+        # If multi-line parser succeeded, validate and normalize
+        multiline_proj = validate_and_enhance_projects(multiline_proj)
+        # Normalize format to match expected output
+        normalized_projects = []
+        for p in multiline_proj:
+            normalized_projects.append({
+                "name": p.get("name", ""),
+                "client": p.get("client", ""),
+                "role": p.get("role", ""),
+                "description": p.get("description", ""),
+                "technologies": p.get("technologies", []),
+                "responsibilities": p.get("responsibilities", []),
+            })
+        return normalized_projects
+    
+    # Fallback to legacy parser if multi-line format didn't work
     projects: List[Dict] = []
     current: Optional[Dict] = None
     mode = "header"
@@ -1471,6 +1517,7 @@ def parse_projects(lines: List[str]) -> List[Dict]:
             })
 
     return cleaned_projects
+
 
 
 # ─────────────────────────────────────────────────────────────────────────────

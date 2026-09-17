@@ -23,7 +23,7 @@ class SyncLog(Base):
     duplicate_matches: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     normalized_records: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     normalization_examples: Mapped[list[dict] | None] = mapped_column(JSON, nullable=True)
-    triggered_by: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    triggered_by: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     def __repr__(self) -> str:

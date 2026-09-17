@@ -330,6 +330,45 @@ class SyncService:
             ]
         )
 
+    def run_auto_sync(self) -> UUID | None:
+        """Run automatic sync if conditions are met.
+        
+        Returns:
+            Sync ID if auto-sync was triggered, None otherwise.
+        """
+        integration = self.integration_repository.get_or_create(self.provider_name)
+        
+        # Check if auto-sync is enabled
+        if not integration.auto_sync_enabled:
+            return None
+        
+        # Check if enough time has passed since last auto-sync
+        now = datetime.now(UTC)
+        if integration.last_auto_sync_at is not None:
+            time_since_last_sync = (now - self._as_utc(integration.last_auto_sync_at)).total_seconds() / 60
+            if time_since_last_sync < integration.auto_sync_interval_minutes:
+                return None
+        
+        # Check if a sync is already running
+        if self.sync_log_repository.has_running_sync():
+            return None
+        
+        # Create system auto-sync (use None for actor_id on system-triggered syncs)
+        try:
+            sync_log = self.sync_log_repository.create_running(triggered_by=None)
+            integration.last_auto_sync_at = now
+            self.integration_repository.save(integration)
+            
+            self.activity_log_repository.create(
+                actor_id=None,
+                action_type="sync_started",
+                description=f"Automatic candidate sync started (sync_id={sync_log.id})",
+            )
+            return sync_log.id
+        except SyncConflictError:
+            # Another sync is already running
+            return None
+
     def _resolve_valid_access_token(self, integration) -> str:
         access_token = decrypt_value(integration.access_token_encrypted)
         refresh_token = decrypt_value(integration.refresh_token_encrypted)

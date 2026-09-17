@@ -3,12 +3,17 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Path, Query, status
+from pydantic import BaseModel
 
 from app.core.dependencies import get_candidate_service, require_roles
 from app.models.user import User
 from app.schemas.candidates import CandidateDetailResponse, CandidateListResponse
 from app.schemas.errors import ErrorResponse
 from app.services.candidate_service import CandidateService
+
+
+class DeleteCandidatesRequest(BaseModel):
+    candidate_ids: list[str]  # Accept strings and convert manually
 
 
 candidate_router = APIRouter()
@@ -50,7 +55,7 @@ async def list_candidates(
     previous_company: str | None = Query(default=None, max_length=120, description="Previous company text filter"),
     employment_status: str | None = Query(default=None, max_length=64, description="Employment status text filter"),
     page: int = Query(default=1, ge=1, description="Page number starting at 1"),
-    page_size: int = Query(default=10, ge=1, le=100, description="Number of rows per page"),
+    page_size: int = Query(default=10, ge=1, le=10000, description="Number of rows per page"),
     sort_by: str = Query(default="full_name", description="Field to sort by"),
     sort_order: str = Query(default="asc", pattern="^(asc|desc)$", description="Sort direction"),
     candidate_service: CandidateService = Depends(get_candidate_service),
@@ -81,6 +86,49 @@ async def list_candidates(
     )
 
 
+@candidate_router.post(
+    "/batch/delete",
+    status_code=status.HTTP_200_OK,
+    responses={
+        401: {"model": ErrorResponse, "description": "Missing, invalid, or expired token"},
+        403: {"model": ErrorResponse, "description": "Role is not allowed to access this endpoint"},
+    },
+    summary="Delete multiple candidates",
+    description="Deletes multiple candidates from the database in a single request. Admin role required.",
+)
+async def delete_candidates_batch(
+    request: DeleteCandidatesRequest,
+    _: User = Depends(require_roles("Admin")),
+    candidate_service: CandidateService = Depends(get_candidate_service),
+) -> dict:
+    import logging
+    from uuid import UUID as UUIDType
+    
+    logger = logging.getLogger(__name__)
+    logger.info(f"Batch delete endpoint called")
+    logger.info(f"Raw request: {request}")
+    logger.info(f"Received {len(request.candidate_ids)} candidate IDs")
+    
+    # Convert string IDs to UUID
+    candidate_uuid_ids = []
+    for cid in request.candidate_ids:
+        try:
+            candidate_uuid_ids.append(UUIDType(cid))
+            logger.debug(f"Converted {cid} to UUID")
+        except Exception as e:
+            logger.error(f"Failed to convert {cid} to UUID: {str(e)}")
+    
+    logger.info(f"Successfully converted {len(candidate_uuid_ids)} IDs to UUID")
+    
+    if not candidate_uuid_ids:
+        logger.warning("No valid candidate IDs provided")
+        return {"message": "No valid candidate IDs provided", "deleted_count": 0}
+    
+    deleted_count = candidate_service.delete_candidates_batch(candidate_uuid_ids)
+    logger.info(f"Batch delete completed. Deleted {deleted_count} candidates")
+    return {"message": f"Deleted {deleted_count} candidate(s) successfully", "deleted_count": deleted_count}
+
+
 @candidate_router.get(
     "/{candidate_id}",
     response_model=CandidateDetailResponse,
@@ -102,3 +150,23 @@ async def get_candidate_details(
     candidate_service: CandidateService = Depends(get_candidate_service),
 ) -> CandidateDetailResponse:
     return candidate_service.get_candidate_details(candidate_id)
+
+
+@candidate_router.delete(
+    "/{candidate_id}",
+    status_code=status.HTTP_200_OK,
+    responses={
+        401: {"model": ErrorResponse, "description": "Missing, invalid, or expired token"},
+        403: {"model": ErrorResponse, "description": "Role is not allowed to access this endpoint"},
+        404: {"model": ErrorResponse, "description": "Candidate not found"},
+    },
+    summary="Delete candidate",
+    description="Deletes a candidate from the database. Admin role required.",
+)
+async def delete_candidate(
+    candidate_id: UUID = Path(description="Candidate UUID"),
+    _: User = Depends(require_roles("Admin")),
+    candidate_service: CandidateService = Depends(get_candidate_service),
+) -> dict:
+    candidate_service.delete_candidate(candidate_id)
+    return {"message": "Candidate deleted successfully"}

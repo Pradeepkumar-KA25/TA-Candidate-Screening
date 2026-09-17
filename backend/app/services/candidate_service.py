@@ -4,11 +4,14 @@ from dataclasses import dataclass
 from math import ceil
 from uuid import UUID
 
-from app.repositories.job_description_repository import JobDescriptionRepository
-from app.services.candidate_filter_service import CandidateFilterCriteria, CandidateFilterQueryComposer
 from app.repositories.candidate_repository import CandidateRepository
+from app.repositories.duplicate_review_repository import DuplicateReviewRepository
+from app.repositories.job_description_repository import JobDescriptionRepository
+from app.repositories.shortlist_repository import ShortlistRepository
+from app.services.candidate_filter_service import CandidateFilterCriteria, CandidateFilterQueryComposer
 from app.schemas.candidates import (
     CandidateDetailResponse,
+    CandidateExtendedFieldsResponse,
     CandidateListItemResponse,
     CandidateListResponse,
     CandidateMatchContextResponse,
@@ -34,10 +37,18 @@ class CandidateFilterValidationError(CandidateError):
     detail = "Experience minimum must be less than or equal to experience maximum"
 
 
+from app.repositories.shortlist_repository import ShortlistRepository
+from app.repositories.duplicate_review_repository import DuplicateReviewRepository
+
+
 @dataclass(slots=True)
 class CandidateService:
     repository: CandidateRepository
     job_description_repository: JobDescriptionRepository
+    shortlist_repository: ShortlistRepository | None = None
+    duplicate_review_repository: DuplicateReviewRepository | None = None
+    shortlist_repository: ShortlistRepository | None = None
+    duplicate_review_repository: DuplicateReviewRepository | None = None
 
     def list_candidates(
         self,
@@ -124,6 +135,7 @@ class CandidateService:
             raise CandidateNotFoundError()
 
         normalized_data = self._extract_normalized_data(candidate.raw_payload or {}, candidate)
+        extended_fields = self._extract_extended_fields(candidate.raw_payload or {})
 
         return CandidateDetailResponse(
             id=candidate.id,
@@ -148,7 +160,60 @@ class CandidateService:
             updated_at=candidate.updated_at,
             normalized_data=normalized_data,
             match_context=self._build_match_context(candidate.match_metadata),
+            extended_fields=extended_fields,
         )
+
+    def delete_candidate(self, candidate_id: UUID) -> None:
+        """Delete a candidate by ID."""
+        candidate = self.repository.get_by_id(candidate_id)
+        if candidate is None:
+            raise CandidateNotFoundError()
+        
+        self.repository.delete(candidate_id)
+
+    def delete_candidates_batch(self, candidate_ids: list[UUID]) -> int:
+        """Delete multiple candidates by ID. Returns the number of deleted candidates."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"Starting batch delete for {len(candidate_ids)} candidates: {candidate_ids}")
+        deleted_count = 0
+        
+        for candidate_id in candidate_ids:
+            try:
+                logger.debug(f"Attempting to find candidate {candidate_id}")
+                candidate = self.repository.get_by_id(candidate_id)
+                
+                if candidate is not None:
+                    logger.debug(f"Found candidate {candidate_id} (name={candidate.full_name})")
+                    
+                    # Delete dependent records first to avoid foreign key constraint violations
+                    if self.shortlist_repository:
+                        try:
+                            removed_count = self.shortlist_repository.remove_candidate_from_all_shortlists(candidate_id)
+                            logger.debug(f"Removed candidate {candidate_id} from {removed_count} shortlist(s)")
+                        except Exception as e:
+                            logger.warning(f"Failed to remove shortlist references for {candidate_id}: {str(e)}")
+                    
+                    if self.duplicate_review_repository:
+                        try:
+                            review_count = self.duplicate_review_repository.remove_candidate_reviews(candidate_id)
+                            logger.debug(f"Removed {review_count} duplicate review(s) involving {candidate_id}")
+                        except Exception as e:
+                            logger.warning(f"Failed to remove duplicate reviews for {candidate_id}: {str(e)}")
+                    
+                    # Now delete the candidate
+                    logger.debug(f"Deleting candidate {candidate_id}...")
+                    self.repository.delete(candidate_id)
+                    deleted_count += 1
+                    logger.info(f"Successfully deleted candidate {candidate_id}")
+                else:
+                    logger.warning(f"Candidate {candidate_id} not found in database")
+            except Exception as e:
+                logger.error(f"Error deleting candidate {candidate_id}: {str(e)}", exc_info=True)
+        
+        logger.info(f"Batch delete completed. Successfully deleted {deleted_count} out of {len(candidate_ids)} candidates")
+        return deleted_count
 
     @staticmethod
     def _to_item(candidate) -> CandidateListItemResponse:
@@ -298,3 +363,100 @@ class CandidateService:
         if value is None:
             return None
         return f"{value} Days"
+
+    @staticmethod
+    def _extract_extended_fields(raw_payload: dict) -> CandidateExtendedFieldsResponse:
+        """Extract and organize extended Zoho fields by category for display in accordion sections."""
+        
+        # Helper function to safely get value from raw_payload
+        def get_field(key: str) -> str | None:
+            value = raw_payload.get(key)
+            if value is None or value == "" or value == []:
+                return None
+            if isinstance(value, list):
+                return str(value[0]) if value else None
+            return str(value).strip() if str(value).strip() else None
+
+        personal_contact = {}
+        personal_fields = [
+            "Date_Of_Birth", "Full_Address", "Aadhaar_No", "Aadhar_New",
+            "Email_Optional", "LinkedIn__s", "Facebook__s", "Recruiter_Mobile_No"
+        ]
+        for field in personal_fields:
+            value = get_field(field)
+            if value:
+                personal_contact[CandidateService._format_field_name(field)] = value
+
+        employment = {}
+        employment_fields = [
+            "Date_of_Joining", "Employee_Type", "Employee_Details", "Emp_ID",
+            "Department", "Function_Department", "Practice", "Work_Mode_Location",
+            "Onsite_Remote", "WorkStream"
+        ]
+        for field in employment_fields:
+            value = get_field(field)
+            if value:
+                employment[CandidateService._format_field_name(field)] = value
+
+        interview_process = {}
+        interview_fields = [
+            "Applied_Job_ID", "Position", "Client", "Client_Name", "Candidate_Owner",
+            "Hiring_Decision", "Hiring_Mode", "L1_Interview_Mode", "L1_Interview_URL",
+            "L1_Job_Role", "L1_Hour", "L2_Interview_Mode", "L2_Interview_URL",
+            "L2_Job_Role", "L2_Hour", "L3_Interview_Mode", "L3_Job_Role", "L3_Hour",
+            "L4_Interview", "L4_Interview_URL", "L4_Job_Role", "L4_Hour",
+            "L5_Interview_URL", "Client_Interview_Status", "Client_Interview_Date",
+            "Panelist_L1", "Panelist_L2", "Panelist_L3"
+        ]
+        for field in interview_fields:
+            value = get_field(field)
+            if value:
+                interview_process[CandidateService._format_field_name(field)] = value
+
+        candidate_lifecycle = {}
+        lifecycle_fields = [
+            "Date_of_Offer", "Date_of_Submission", "Profile_Sent_Date",
+            "Resume_Sourced_Date", "Candidate_Status", "LEADPORTALSTATUS",
+            "Is_Blocked__s", "Is_Locked", "Is_Unqualified"
+        ]
+        for field in lifecycle_fields:
+            value = get_field(field)
+            if value:
+                candidate_lifecycle[CandidateService._format_field_name(field)] = value
+
+        salary_benefits = {}
+        salary_fields = [
+            "Annual_CTC_USD", "Basic_Pay", "Gross_Pay_A", "House_Rent_Allowance",
+            "Performance_Bonus", "Joining_Bonus", "PF_Contribution_Employer",
+            "Gratuity", "Life_Insurance_Monthly", "GMC", "GTLI"
+        ]
+        for field in salary_fields:
+            value = get_field(field)
+            if value:
+                salary_benefits[CandidateService._format_field_name(field)] = value
+
+        referral_vendor_sourcing = {}
+        referral_fields = [
+            "Vendor", "Vendor_Name", "Name_of_Source", "Name_of_Recruiter",
+            "Referred_by_Employee__s", "Referral_Comments",
+            "Source_Direct_Job_Portal_Vendor_Emp_Refer"
+        ]
+        for field in referral_fields:
+            value = get_field(field)
+            if value:
+                referral_vendor_sourcing[CandidateService._format_field_name(field)] = value
+
+        return CandidateExtendedFieldsResponse(
+            personal_contact=personal_contact,
+            employment=employment,
+            interview_process=interview_process,
+            candidate_lifecycle=candidate_lifecycle,
+            salary_benefits=salary_benefits,
+            referral_vendor_sourcing=referral_vendor_sourcing,
+        )
+
+    @staticmethod
+    def _format_field_name(field: str) -> str:
+        """Convert Zoho API field name to readable label."""
+        # Replace underscores with spaces and convert to title case
+        return field.replace("_", " ").title()

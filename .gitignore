@@ -1,50 +1,123 @@
 # OS / filesystem
 .DS_Store
-Thumbs.db
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbsdb
+desktop.ini
 
 # Editor / IDE
 .idea/
 .vscode/
 *.code-workspace
+*.swp
+*.swo
+*~
+.sublime-workspace
+.sublime-project
+*.iml
 
 # Logs
 *.log
-npm-debug.log* 
+npm-debug.log*
+npm-debug.log
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+.pnpm-debug.log*
 
 # Environment and secrets
 .env
+.env.local
+.env.*.local
 .env.*
 !.env.example
+!.env.*.example
 **/.env
+**/.env.local
+**/.env.*.local
 **/.env.*
 !**/.env.example
+!**/.env.*.example
 
 # Python backend artifacts
 backend/__pycache__/
 backend/**/*.py[cod]
+backend/**/*.pyo
+backend/**/*.pyd
 backend/.pytest_cache/
 backend/.mypy_cache/
+backend/.pytype/
+backend/.dmypy.json
+backend/dmypy.json
+backend/.pyre/
 backend/.coverage
+backend/.coverage.*
 backend/htmlcov/
+backend/.tox/
+backend/.hypothesis/
+backend/.nox/
 backend/.venv/
 backend/venv/
+backend/ENV/
+backend/env/
 backend/build/
+backend/develop-eggs/
 backend/dist/
+backend/downloads/
+backend/eggs/
+backend/.eggs/
+backend/lib/
+backend/lib64/
+backend/parts/
+backend/sdist/
+backend/var/
+backend/wheels/
+backend/pip-wheel-metadata/
+backend/share/python-wheels/
+backend/*.egg-info/
+backend/.installed.cfg
+backend/*.egg
+backend/MANIFEST
+backend/pip-log.txt
+backend/pip-delete-this-directory.txt
 backend/*.db
+backend/*.db-journal
+backend/instance/
+backend/.webassets-cache
+backend/.scrapy
+backend/docs/_build/
+backend/.ipynb_checkpoints
+backend/.pyc
 
-# Frontend (Angular) artifacts
+# Frontend (Angular/Node) artifacts
 frontend/node_modules/
 frontend/.angular/
+frontend/.angular/cache/
 frontend/dist/
 frontend/coverage/
 frontend/.tmp/
 frontend/.cache/
+frontend/.npm
+frontend/.eslintcache
+frontend/.node_repl_history
+frontend/*.tsbuildinfo
+frontend/dist-ssr
+frontend/*.local
+frontend/.parcel-cache
+frontend/.vscode/extensions.json
+frontend/package-lock.json
+frontend/pnpm-lock.yaml
+frontend/yarn.lock
 
 # Runtime files created by resume uploads and template generation
 backend/temp/
 backend/uploads/
+backend/temp/**/*
+backend/uploads/**/*
 outputs/
 temp/
 uploads/
@@ -57,6 +130,8 @@ final-test-output.txt
 fresh-output.txt
 gen_test.txt
 new-test-output.txt
+full-test-output*.txt
+test-full-output.txt
 
 # Historical implementation notes
 *_REPORT.md
@@ -64,3 +139,12 @@ new-test-output.txt
 *_COMPLETE.md
 *_PLAN.md
 *_TODO*.md
+
+# VS Code workspace settings (personal)
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+
+# OS specific
+.AppleDouble
+.LSOverride

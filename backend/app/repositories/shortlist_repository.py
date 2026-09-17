@@ -103,3 +103,12 @@ class ShortlistRepository:
             return True
         self.session.rollback()
         return False
+
+    def remove_candidate_from_all_shortlists(self, candidate_id: UUID) -> int:
+        """Remove a candidate from all shortlists. Returns the number of shortlist entries deleted."""
+        delete_statement = delete(ShortlistCandidate).where(
+            ShortlistCandidate.candidate_id == candidate_id
+        )
+        result = self.session.execute(delete_statement)
+        self.session.commit()
+        return result.rowcount if result.rowcount else 0

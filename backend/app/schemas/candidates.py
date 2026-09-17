@@ -47,6 +47,15 @@ class CandidateMatchContextResponse(BaseModel):
     metadata: dict[str, Any] | None = None
 
 
+class CandidateExtendedFieldsResponse(BaseModel):
+    personal_contact: dict[str, Any] = {}
+    employment: dict[str, Any] = {}
+    interview_process: dict[str, Any] = {}
+    candidate_lifecycle: dict[str, Any] = {}
+    salary_benefits: dict[str, Any] = {}
+    referral_vendor_sourcing: dict[str, Any] = {}
+
+
 class CandidateDetailResponse(BaseModel):
     id: UUID
     zoho_candidate_id: str | None = None
@@ -70,3 +79,4 @@ class CandidateDetailResponse(BaseModel):
     updated_at: datetime
     normalized_data: list[CandidateNormalizedPairResponse]
     match_context: CandidateMatchContextResponse
+    extended_fields: CandidateExtendedFieldsResponse

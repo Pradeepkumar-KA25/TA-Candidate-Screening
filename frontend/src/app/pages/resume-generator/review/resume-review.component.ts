@@ -317,6 +317,10 @@ export class ResumeReviewComponent implements OnInit, OnDestroy {
   }
 
   private populateForm(data: any): void {
+    console.log('=== Resume Data Received ===');
+    console.log('Full parsed_data:', data);
+    console.log('Experience count:', data.experience?.length || 0);
+    
     // Set contact info
     this.form.patchValue({
       contact: data.contact,
@@ -328,13 +332,27 @@ export class ResumeReviewComponent implements OnInit, OnDestroy {
     });
 
     // Add experience items
-    data.experience.forEach((exp: any) => {
+    data.experience.forEach((exp: any, idx: number) => {
+      console.log(`Experience ${idx + 1}:`, exp);
+      
+      // Extract title with multiple fallback options
+      let titleValue = exp.title || exp.designation || exp.jobTitle || exp.role || '';
+      
+      // If title is still empty, log warning for debugging
+      if (!titleValue) {
+        console.warn(`Experience ${idx + 1} missing title:`, exp);
+      } else {
+        console.log(`Experience ${idx + 1} title: "${titleValue}"`);
+      }
+      
       this.experience.push(
         this.fb.nonNullable.group({
           company: exp.company || exp.company_name || '',
-          title: exp.title || '',
-          dates: exp.dates || '',
-          responsibilities: (exp.responsibilities || []).join('\n'),
+          title: titleValue,
+          dates: exp.dates || exp.duration || '',
+          responsibilities: Array.isArray(exp.responsibilities) 
+            ? exp.responsibilities.join('\n') 
+            : (exp.responsibilities || ''),
         })
       );
     });

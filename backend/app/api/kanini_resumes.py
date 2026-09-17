@@ -164,6 +164,16 @@ async def get_resume(
     if not resume:
         raise HTTPException(status_code=404, detail="Resume not found")
 
+    # Debug logging
+    import logging
+    logger = logging.getLogger(__name__)
+    if resume.parsed_data and 'experience' in resume.parsed_data:
+        exp_count = len(resume.parsed_data['experience'])
+        logger.info(f"Resume {resume_id}: Returning {exp_count} experiences")
+        for i, exp in enumerate(resume.parsed_data['experience']):
+            has_title = bool(exp.get('title'))
+            logger.info(f"  Experience {i+1}: title={has_title}, company={exp.get('company', 'N/A')}")
+
     return {
         "id": str(resume.id),
         "filename": resume.filename,

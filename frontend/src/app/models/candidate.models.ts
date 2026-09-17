@@ -63,6 +63,15 @@ export interface CandidateMatchContext {
   metadata: Record<string, unknown> | null;
 }
 
+export interface CandidateExtendedFields {
+  personal_contact: Record<string, string>;
+  employment: Record<string, string>;
+  interview_process: Record<string, string>;
+  candidate_lifecycle: Record<string, string>;
+  salary_benefits: Record<string, string>;
+  referral_vendor_sourcing: Record<string, string>;
+}
+
 export interface CandidateDetailResponse {
   id: string;
   zoho_candidate_id: string;
@@ -86,4 +95,5 @@ export interface CandidateDetailResponse {
   updated_at: string;
   normalized_data: CandidateNormalizedPair[];
   match_context: CandidateMatchContext;
+  extended_fields: CandidateExtendedFields;
 }

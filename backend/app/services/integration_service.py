@@ -182,6 +182,36 @@ class IntegrationService:
             status=record.status,
             access_level=record.access_level,
             sync_type=record.sync_type,
+            auto_sync_enabled=record.auto_sync_enabled,
+            auto_sync_interval_minutes=record.auto_sync_interval_minutes,
             last_successful_sync_at=record.last_successful_sync_at,
+            last_auto_sync_at=record.last_auto_sync_at,
             last_checked_at=record.last_checked_at or datetime.now(UTC),
         )
+
+    def update_auto_sync_settings(self, enabled: bool, interval_minutes: int) -> ZohoIntegrationStatusResponse:
+        """Update auto-sync settings for Zoho integration.
+        
+        Args:
+            enabled: Whether auto-sync is enabled or disabled
+            interval_minutes: Interval in minutes between auto-syncs (minimum 5)
+        
+        Returns:
+            Updated ZohoIntegrationStatusResponse
+        """
+        record = self.repository.get_or_create(self.provider_name)
+        
+        # Ensure interval is at least 5 minutes
+        interval_minutes = max(5, interval_minutes)
+        
+        record.auto_sync_enabled = enabled
+        record.auto_sync_interval_minutes = interval_minutes
+        record.updated_at = datetime.now(UTC)
+        
+        # When enabling auto-sync, reset the timer so countdown starts fresh from NOW
+        if enabled:
+            record.last_auto_sync_at = datetime.now(UTC)
+        
+        self.repository.save(record)
+        
+        return self._to_response(record)

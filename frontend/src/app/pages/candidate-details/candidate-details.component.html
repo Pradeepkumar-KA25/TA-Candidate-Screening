@@ -61,6 +61,167 @@
       </div>
     </article>
 
+    <!-- Extended Fields Accordion Sections -->
+    <article class="card" *ngIf="hasExtendedFields()">
+      <h3>Additional Information</h3>
+      
+      <!-- Personal/Contact Section -->
+      <div class="accordion-section" *ngIf="hasPersonalContact()">
+        <button 
+          class="accordion-header" 
+          (click)="toggleSection('personal_contact')"
+          [class.expanded]="isSectionExpanded('personal_contact')">
+          <span class="accordion-icon">
+            <svg *ngIf="!isSectionExpanded('personal_contact')" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+            <svg *ngIf="isSectionExpanded('personal_contact')" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </span>
+          <span>Personal & Contact</span>
+        </button>
+        <div class="accordion-content" *ngIf="isSectionExpanded('personal_contact')">
+          <div class="detail-grid">
+            <div class="detail-row" *ngFor="let item of (profile.extended_fields.personal_contact | keyvalue)">
+              <dt>{{ item.key }}</dt>
+              <dd>{{ safeText(item.value) }}</dd>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Employment Section -->
+      <div class="accordion-section" *ngIf="hasEmployment()">
+        <button 
+          class="accordion-header" 
+          (click)="toggleSection('employment')"
+          [class.expanded]="isSectionExpanded('employment')">
+          <span class="accordion-icon">
+            <svg *ngIf="!isSectionExpanded('employment')" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+            <svg *ngIf="isSectionExpanded('employment')" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </span>
+          <span>Employment</span>
+        </button>
+        <div class="accordion-content" *ngIf="isSectionExpanded('employment')">
+          <div class="detail-grid">
+            <div class="detail-row" *ngFor="let item of (profile.extended_fields.employment | keyvalue)">
+              <dt>{{ item.key }}</dt>
+              <dd>{{ safeText(item.value) }}</dd>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hiring and Interview Process Section -->
+      <div class="accordion-section" *ngIf="hasInterviewProcess()">
+        <button 
+          class="accordion-header" 
+          (click)="toggleSection('interview_process')"
+          [class.expanded]="isSectionExpanded('interview_process')">
+          <span class="accordion-icon">
+            <svg *ngIf="!isSectionExpanded('interview_process')" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+            <svg *ngIf="isSectionExpanded('interview_process')" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </span>
+          <span>Hiring & Interview Process</span>
+        </button>
+        <div class="accordion-content" *ngIf="isSectionExpanded('interview_process')">
+          <div class="detail-grid">
+            <div class="detail-row" *ngFor="let item of (profile.extended_fields.interview_process | keyvalue)">
+              <dt>{{ item.key }}</dt>
+              <dd>{{ safeText(item.value) }}</dd>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Candidate Lifecycle Section -->
+      <div class="accordion-section" *ngIf="hasCandidateLifecycle()">
+        <button 
+          class="accordion-header" 
+          (click)="toggleSection('candidate_lifecycle')"
+          [class.expanded]="isSectionExpanded('candidate_lifecycle')">
+          <span class="accordion-icon">
+            <svg *ngIf="!isSectionExpanded('candidate_lifecycle')" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+            <svg *ngIf="isSectionExpanded('candidate_lifecycle')" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </span>
+          <span>Candidate Lifecycle</span>
+        </button>
+        <div class="accordion-content" *ngIf="isSectionExpanded('candidate_lifecycle')">
+          <div class="detail-grid">
+            <div class="detail-row" *ngFor="let item of (profile.extended_fields.candidate_lifecycle | keyvalue)">
+              <dt>{{ item.key }}</dt>
+              <dd>{{ safeText(item.value) }}</dd>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Salary & Benefits Section -->
+      <div class="accordion-section" *ngIf="hasSalaryBenefits()">
+        <button 
+          class="accordion-header" 
+          (click)="toggleSection('salary_benefits')"
+          [class.expanded]="isSectionExpanded('salary_benefits')">
+          <span class="accordion-icon">
+            <svg *ngIf="!isSectionExpanded('salary_benefits')" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+            <svg *ngIf="isSectionExpanded('salary_benefits')" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </span>
+          <span>Salary & Benefits</span>
+        </button>
+        <div class="accordion-content" *ngIf="isSectionExpanded('salary_benefits')">
+          <div class="detail-grid">
+            <div class="detail-row" *ngFor="let item of (profile.extended_fields.salary_benefits | keyvalue)">
+              <dt>{{ item.key }}</dt>
+              <dd>{{ safeText(item.value) }}</dd>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Referral, Vendor & Sourcing Section -->
+      <div class="accordion-section" *ngIf="hasReferralVendor()">
+        <button 
+          class="accordion-header" 
+          (click)="toggleSection('referral_vendor_sourcing')"
+          [class.expanded]="isSectionExpanded('referral_vendor_sourcing')">
+          <span class="accordion-icon">
+            <svg *ngIf="!isSectionExpanded('referral_vendor_sourcing')" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+            <svg *ngIf="isSectionExpanded('referral_vendor_sourcing')" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </span>
+          <span>Referral, Vendor & Sourcing</span>
+        </button>
+        <div class="accordion-content" *ngIf="isSectionExpanded('referral_vendor_sourcing')">
+          <div class="detail-grid">
+            <div class="detail-row" *ngFor="let item of (profile.extended_fields.referral_vendor_sourcing | keyvalue)">
+              <dt>{{ item.key }}</dt>
+              <dd>{{ safeText(item.value) }}</dd>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+
     <article class="card">
       <h3>Normalized Data</h3>
       <div class="norm-list" *ngIf="profile.normalized_data.length > 0; else noNormalizationData">
@@ -84,6 +245,7 @@
       <a routerLink="/candidates" class="btn btn-secondary">Back to Results</a>
       <a routerLink="/ranking" class="btn btn-primary">View Match Analysis</a>
       <a routerLink="/duplicates" class="btn btn-secondary">Review Duplicates</a>
+      <button (click)="deleteCandidate()" class="btn btn-danger">Delete Candidate</button>
     </div>
   </section>
 

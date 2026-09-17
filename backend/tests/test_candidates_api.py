@@ -357,6 +357,16 @@ def test_candidate_details_returns_complete_profile(sqlite_session, user_factory
         assert body["match_context"]["jd_title"] == "Java Backend Developer"
         assert body["match_context"]["match_percentage"] == 92
         assert body["normalized_data"]
+        
+        # Verify extended_fields are included in response
+        assert "extended_fields" in body, "extended_fields is missing from response"
+        assert isinstance(body["extended_fields"], dict), "extended_fields should be a dict"
+        assert "personal_contact" in body["extended_fields"]
+        assert "employment" in body["extended_fields"]
+        assert "interview_process" in body["extended_fields"]
+        assert "candidate_lifecycle" in body["extended_fields"]
+        assert "salary_benefits" in body["extended_fields"]
+        assert "referral_vendor_sourcing" in body["extended_fields"]
 
         normalized_fields = {item["field"] for item in body["normalized_data"]}
         assert "current_location" in normalized_fields

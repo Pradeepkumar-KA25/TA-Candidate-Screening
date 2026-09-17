@@ -11,8 +11,16 @@ class ZohoIntegrationStatusResponse(BaseModel):
     status: str
     access_level: str
     sync_type: str
+    auto_sync_enabled: bool
+    auto_sync_interval_minutes: int
     last_successful_sync_at: datetime | None = None
+    last_auto_sync_at: datetime | None = None
     last_checked_at: datetime
+
+
+class AutoSyncSettingsRequest(BaseModel):
+    auto_sync_enabled: bool
+    auto_sync_interval_minutes: int = 5
 
 
 class ZohoFieldMetadataResponse(BaseModel):

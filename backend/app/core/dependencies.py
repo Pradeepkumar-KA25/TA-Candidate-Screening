@@ -20,6 +20,7 @@ from app.repositories.job_description_repository import JobDescriptionRepository
 from app.repositories.normalization_rule_repository import NormalizationRuleRepository
 from app.repositories.ranking_criteria_repository import RankingCriteriaRepository
 from app.repositories.saved_filter_repository import SavedFilterRepository
+from app.repositories.shortlist_repository import ShortlistRepository
 from app.repositories.sync_log_repository import SyncLogRepository
 from app.integrations.zoho_oauth import ZohoOAuthClient
 from app.integrations.zoho_recruit import ZohoRecruitClient
@@ -119,11 +120,22 @@ def get_saved_filter_repository(session: Session = Depends(get_db_session)) -> S
     return SavedFilterRepository(session)
 
 
+def get_shortlist_repository(session: Session = Depends(get_db_session)) -> ShortlistRepository:
+    return ShortlistRepository(session)
+
+
 def get_candidate_service(
     repository: CandidateRepository = Depends(get_candidate_repository),
     job_description_repository: JobDescriptionRepository = Depends(get_job_description_repository),
+    shortlist_repository: "ShortlistRepository" = Depends(get_shortlist_repository),
+    duplicate_review_repository: "DuplicateReviewRepository" = Depends(get_duplicate_review_repository),
 ) -> CandidateService:
-    return CandidateService(repository=repository, job_description_repository=job_description_repository)
+    return CandidateService(
+        repository=repository,
+        job_description_repository=job_description_repository,
+        shortlist_repository=shortlist_repository,
+        duplicate_review_repository=duplicate_review_repository,
+    )
 
 
 def get_saved_filter_service(

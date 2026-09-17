@@ -24,3 +24,143 @@
   color: var(--slate-600);
 }
 
+/* Accordion Styles */
+.accordion-section {
+  border-top: 1px solid #e0e0e0;
+}
+
+.accordion-section:first-child {
+  border-top: none;
+}
+
+.accordion-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  color: #0d1b2a;
+  transition: color 0.2s ease;
+  text-align: left;
+}
+
+.accordion-header:hover {
+  color: #1b5fb8;
+}
+
+.accordion-header.expanded {
+  color: #1b5fb8;
+}
+
+.accordion-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: currentColor;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.accordion-header.expanded .accordion-icon {
+  transform: rotate(0deg);
+}
+
+.accordion-content {
+  max-height: 2000px;
+  opacity: 1;
+  overflow: hidden;
+  animation: slideDown 0.3s ease;
+}
+
+.accordion-section:not(.expanded) .accordion-content {
+  display: none;
+}
+
+.accordion-content .detail-grid {
+  padding-bottom: 12px;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 2000px;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 1;
+    max-height: 2000px;
+  }
+  to {
+    opacity: 0;
+    max-height: 0;
+  }
+}
+
+/* Button Styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.btn-primary {
+  background-color: #1b5fb8;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #144a94;
+}
+
+.btn-secondary {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.btn-secondary:hover {
+  background-color: #c9c9c9;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #c82333;
+}
+
+.action-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.action-row .btn {
+  flex: 1 1 auto;
+  min-width: 140px;
+}
+

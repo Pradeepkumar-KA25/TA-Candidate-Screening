@@ -6,17 +6,20 @@
     </div>
 
     <div class="candidate-toolbar">
-      <form class="search-input" (ngSubmit)="onSearchSubmit()">
+      <div class="search-input">
         <input
           type="text"
           [formControl]="searchControl"
           placeholder="Search by candidate name, skill, company..."
           aria-label="Search candidates"
         />
-        <button type="submit" class="btn btn-secondary search-button" aria-label="Search" title="Search">
-          <span aria-hidden="true">&#128269;</span>
+        <button type="button" class="btn btn-secondary search-button" (click)="onSearchSubmit()" aria-label="Search" title="Search">
+          <svg aria-hidden="true" class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
         </button>
-      </form>
+      </div>
 
       <div class="candidate-toolbar-actions">
         <button type="button" class="btn btn-secondary filter-button" [class.is-active]="isFilterPanelOpen" (click)="toggleFilters()">
@@ -144,7 +147,9 @@
                   type="checkbox"
                   [checked]="isAllSelected()"
                   [indeterminate]="isIndeterminate()"
+                  [disabled]="selectingAllCandidates || loading"
                   (change)="toggleSelectAll()"
+                  [title]="selectingAllCandidates ? 'Loading all candidates...' : 'Select all candidates across all pages'"
                   aria-label="Select all candidates"
                 />
               </th>
@@ -243,6 +248,10 @@
 
         <button class="btn btn-primary" [disabled]="movingToShortlist || !selectedShortlistJdId" (click)="moveSelectedToShortlist()">
           {{ movingToShortlist ? 'Moving...' : 'Move to Shortlist' }}
+        </button>
+
+        <button class="btn btn-danger" [disabled]="deletingCandidates" (click)="deleteSelectedCandidates()">
+          {{ deletingCandidates ? 'Deleting...' : 'Delete Selected' }}
         </button>
       </div>
     </div>

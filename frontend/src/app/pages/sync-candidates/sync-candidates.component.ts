@@ -27,6 +27,7 @@ export class SyncCandidatesComponent {
   showSyncHistory = false;
   syncInProgress = false;
   syncErrorMessage: string | null = null;
+  autoSyncToggling = false;
 
   constructor(
     private readonly router: Router,
@@ -89,6 +90,34 @@ export class SyncCandidatesComponent {
     return 'Last synced recently';
   }
 
+  get nextSyncTime(): string {
+    if (!this.zohoStatus?.auto_sync_enabled) {
+      return 'Auto-sync is OFF';
+    }
+
+    if (!this.zohoStatus?.last_auto_sync_at) {
+      return 'Next sync: Soon (first time)';
+    }
+
+    const lastSyncTime = new Date(this.zohoStatus.last_auto_sync_at).getTime();
+    const intervalMinutes = this.zohoStatus.auto_sync_interval_minutes;
+    const nextSyncTime = lastSyncTime + (intervalMinutes * 60 * 1000);
+    const now = Date.now();
+
+    if (nextSyncTime <= now) {
+      return 'Next sync: Pending (overdue)';
+    }
+
+    const remainingMs = nextSyncTime - now;
+    const remainingMinutes = Math.ceil(remainingMs / 60_000);
+
+    if (remainingMinutes < 1) {
+      return 'Next sync: Within seconds';
+    }
+
+    return `Next sync: In ${remainingMinutes} min${remainingMinutes === 1 ? '' : 's'}`;
+  }
+
   get previewSync(): SyncStatusResponse | null {
     return this.syncHistory.find((sync) => sync.status === 'completed') ?? null;
   }
@@ -117,6 +146,32 @@ export class SyncCandidatesComponent {
     if (this.showSyncHistory) {
       this.loadSyncHistory();
     }
+  }
+
+  toggleAutoSync(): void {
+    if (!this.zohoStatus || this.autoSyncToggling) {
+      return;
+    }
+
+    this.autoSyncToggling = true;
+    const newState = !this.zohoStatus.auto_sync_enabled;
+
+    this.integrationService
+      .updateAutoSyncSettings({
+        auto_sync_enabled: newState,
+        auto_sync_interval_minutes: this.zohoStatus.auto_sync_interval_minutes,
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (status) => {
+          this.zohoStatus = status;
+          this.autoSyncToggling = false;
+        },
+        error: () => {
+          this.syncErrorMessage = 'Failed to update auto-sync settings. Please try again.';
+          this.autoSyncToggling = false;
+        },
+      });
   }
 
   onStartSync(): void {

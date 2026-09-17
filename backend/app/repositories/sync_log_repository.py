@@ -71,9 +71,15 @@ class SyncLogRepository:
         return self.session.scalar(statement)
 
     def list_for_user(self, user_id: UUID, limit: int) -> list[SyncLog]:
+        from sqlalchemy import or_
         statement = (
             select(SyncLog)
-            .where(SyncLog.triggered_by == user_id)
+            .where(
+                or_(
+                    SyncLog.triggered_by == user_id,  # User-triggered syncs
+                    SyncLog.triggered_by == None  # System/auto-triggered syncs
+                )
+            )
             .order_by(desc(SyncLog.started_at), desc(SyncLog.id))
             .limit(limit)
         )
