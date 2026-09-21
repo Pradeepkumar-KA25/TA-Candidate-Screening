@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 
 import { authGuard } from './guards/auth.guard';
 import { AppLayoutComponent } from './components/app-layout/app-layout.component';
-import { CandidateDetailsComponent } from './pages/candidate-details/candidate-details.component';
+import { CandidateFieldsViewComponent } from './pages/candidate-fields-view/candidate-fields-view.component';
 import { CandidatesComponent } from './pages/candidates/candidates.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { DuplicatesComponent } from './pages/duplicates/duplicates.component';
@@ -39,7 +39,7 @@ export const routes: Routes = [
 		children: [
 			{ path: 'dashboard', component: DashboardComponent },
 			{ path: 'candidates', component: CandidatesComponent },
-			{ path: 'candidates/:id', component: CandidateDetailsComponent },
+			{ path: 'candidates/:id', component: CandidateFieldsViewComponent },
 			{ path: 'filters', component: FiltersComponent },
 			{ path: 'ranking', component: RankingComponent },
 			{ path: 'shortlists', component: ShortlistsComponent },

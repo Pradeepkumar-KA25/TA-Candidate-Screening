@@ -54,6 +54,12 @@ class CandidateExtendedFieldsResponse(BaseModel):
     candidate_lifecycle: dict[str, Any] = {}
     salary_benefits: dict[str, Any] = {}
     referral_vendor_sourcing: dict[str, Any] = {}
+    contact_address: dict[str, Any] = {}
+    professional_details: dict[str, Any] = {}
+    education_qualifications: dict[str, Any] = {}
+    application_recruitment: dict[str, Any] = {}
+    system_metadata: dict[str, Any] = {}
+    other_fields: dict[str, Any] = {}
 
 
 class CandidateDetailResponse(BaseModel):

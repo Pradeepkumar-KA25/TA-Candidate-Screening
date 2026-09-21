@@ -1,0 +1,92 @@
+<div class="page-container">
+  <!-- Header Bar -->
+  <div class="page-header">
+    <div class="header-content">
+      <button class="back-button" (click)="goBack()" title="Go back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </button>
+      <div class="header-info">
+        <h1 class="page-title">{{ safeName(candidate?.full_name) }}</h1>
+      </div>
+      <div class="header-actions">
+        <button class="action-btn secondary" (click)="downloadResume()" [disabled]="!candidate?.resume_url">
+          📄 Resume
+        </button>
+        <button class="action-btn secondary" (click)="deleteCandidate()">
+          🗑️ Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading candidate details...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="!loading && errorMessage" class="error-banner">
+    <p>{{ errorMessage }}</p>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!loading && candidate" class="content-wrapper">
+    
+    <!-- Resume Preview Section (if available) -->
+    <div class="resume-section" *ngIf="candidate.resume_url">
+      <div class="resume-card">
+        <div class="resume-icon">📄</div>
+        <div class="resume-info">
+          <h4>Resume on File</h4>
+          <p>{{ candidate.resume_file_name || 'resume.pdf' }}</p>
+          <small>Updated: {{ candidate.resume_last_fetched_at | date: 'short' }}</small>
+        </div>
+        <a class="resume-link" [href]="'/api/v1/candidates/' + candidate.id + '/resume'" target="_blank">
+          View
+        </a>
+      </div>
+    </div>
+
+    <!-- Field Groups -->
+    <div class="field-groups-container">
+      <app-candidate-field-section 
+        *ngFor="let group of fieldGroups"
+        [section]="group"
+        (toggleRequested)="onFieldGroupToggled(group)">
+      </app-candidate-field-section>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && !candidate && !errorMessage" class="empty-state">
+    <p>No candidate found</p>
+    <button class="back-button" (click)="goBack()">Go Back</button>
+  </div>
+
+  <!-- Resume Viewer Modal -->
+  <div class="resume-viewer-overlay" *ngIf="showResumeViewer" (click)="closeResumeViewer()">
+    <div class="resume-viewer-modal" (click)="$event.stopPropagation()">
+      <div class="resume-viewer-header">
+        <h2>Resume - {{ safeName(candidate?.full_name) }}</h2>
+        <div class="resume-viewer-actions">
+          <button class="download-btn" (click)="downloadResumeFile()" title="Download resume">
+            ⬇️ Download
+          </button>
+          <button class="close-btn" (click)="closeResumeViewer()" title="Close">
+            ✕
+          </button>
+        </div>
+      </div>
+      <div class="resume-viewer-container">
+        <iframe 
+          [src]="resumeUrl" 
+          class="resume-iframe"
+          title="Resume viewer">
+        </iframe>
+      </div>
+    </div>
+  </div>
+</div>

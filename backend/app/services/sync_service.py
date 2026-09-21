@@ -15,6 +15,7 @@ from app.repositories.integration_settings_repository import IntegrationSettings
 from app.repositories.sync_log_repository import SyncLogRepository
 from app.services.duplicate_detection_service import DuplicateDetectionService
 from app.services.normalization_service import NormalizationService
+from app.services.resume_fetch_service import ResumeFetchService, ResumeFetchError
 from app.schemas.sync import (
     CandidateSyncHistoryItemResponse,
     CandidateSyncHistoryResponse,
@@ -53,6 +54,7 @@ class SyncService:
     normalization_service: NormalizationService
     zoho_oauth_client: ZohoOAuthClient
     zoho_recruit_client: ZohoRecruitClient
+    resume_fetch_service: ResumeFetchService | None = None
 
     provider_name: str = "zoho_recruit"
     progress_commit_interval: int = 200
@@ -141,8 +143,41 @@ class SyncService:
                     if existing is not None:
                         continue
 
-                    self.candidate_repository.create_or_update(normalized, commit=False)
+                    candidate, _ = self.candidate_repository.create_or_update(normalized, commit=False)
                     created += 1
+
+                    # Fetch resume if service is available
+                    if self.resume_fetch_service is not None:
+                        try:
+                            zoho_candidate_id = normalized.get("zoho_candidate_id")
+                            if zoho_candidate_id:
+                                resume_url, resume_file_name, error = self.resume_fetch_service.fetch_and_save_resume(
+                                    access_token=access_token,
+                                    candidate_id=str(candidate.id),
+                                    zoho_candidate_id=zoho_candidate_id,
+                                    full_name=candidate.full_name,
+                                )
+                                if resume_url:
+                                    candidate.resume_url = resume_url
+                                    candidate.resume_file_name = resume_file_name
+                                    candidate.resume_last_fetched_at = datetime.now(UTC)
+                                    self.activity_log_repository.create(
+                                        actor_id=sync_log.triggered_by,
+                                        action_type="resume_fetched",
+                                        description=f"Resume fetched for candidate {candidate.full_name} (resume_url={resume_url})",
+                                    )
+                                elif error:
+                                    self.activity_log_repository.create(
+                                        actor_id=sync_log.triggered_by,
+                                        action_type="resume_fetch_failed",
+                                        description=f"Resume fetch failed for candidate {candidate.full_name}: {error}",
+                                    )
+                        except Exception as exc:
+                            self.activity_log_repository.create(
+                                actor_id=sync_log.triggered_by,
+                                action_type="resume_fetch_error",
+                                description=f"Unexpected error fetching resume for {candidate.full_name}: {str(exc)}",
+                            )
 
                     if fetched % self.progress_commit_interval == 0:
                         self.sync_log_repository.mark_running_progress(
@@ -406,7 +441,8 @@ class SyncService:
 
     def _normalize_candidate(self, raw_candidate: dict) -> dict:
         zoho_record_id = str(raw_candidate.get("id")).strip()
-        zoho_candidate_id = self._extract_first_from_keys(raw_candidate, "Candidate_ID", "Candidate_Id")
+        # Use the actual Zoho record ID (from "id" field) for API calls
+        zoho_candidate_id = zoho_record_id
         full_name = self._join_name_parts(raw_candidate)
         email = self._extract_first(raw_candidate.get("Email"))
         phone = self._extract_first(raw_candidate.get("Phone"))

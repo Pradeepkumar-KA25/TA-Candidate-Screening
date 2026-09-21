@@ -37,6 +37,11 @@ class Candidate(Base):
     match_metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     source: Mapped[str | None] = mapped_column(String(64), nullable=True)
     raw_payload: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    
+    # Resume fields
+    resume_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    resume_file_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    resume_last_fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(

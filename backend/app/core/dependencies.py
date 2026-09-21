@@ -34,6 +34,7 @@ from app.services.job_description_service import JobDescriptionService
 from app.services.normalization_service import NormalizationService
 from app.services.ranking_criteria_service import RankingCriteriaService
 from app.services.ranking_service import RankingService
+from app.services.resume_fetch_service import ResumeFetchService
 from app.services.saved_filter_service import SavedFilterService
 from app.services.sync_service import SyncService
 from app.services.auth_service import (
@@ -124,17 +125,28 @@ def get_shortlist_repository(session: Session = Depends(get_db_session)) -> Shor
     return ShortlistRepository(session)
 
 
+def get_resume_fetch_service(
+    candidate_repository: CandidateRepository = Depends(get_candidate_repository),
+    zoho_recruit_client: ZohoRecruitClient = Depends(get_zoho_recruit_client),
+) -> ResumeFetchService:
+    return ResumeFetchService(
+        candidate_repository=candidate_repository,
+        zoho_recruit_client=zoho_recruit_client,
+    )
+
 def get_candidate_service(
     repository: CandidateRepository = Depends(get_candidate_repository),
     job_description_repository: JobDescriptionRepository = Depends(get_job_description_repository),
     shortlist_repository: "ShortlistRepository" = Depends(get_shortlist_repository),
     duplicate_review_repository: "DuplicateReviewRepository" = Depends(get_duplicate_review_repository),
+    resume_fetch_service: "ResumeFetchService" = Depends(get_resume_fetch_service),
 ) -> CandidateService:
     return CandidateService(
         repository=repository,
         job_description_repository=job_description_repository,
         shortlist_repository=shortlist_repository,
         duplicate_review_repository=duplicate_review_repository,
+        resume_fetch_service=resume_fetch_service,
     )
 
 
@@ -180,6 +192,16 @@ def get_dashboard_service(
     return DashboardService(session=session, integration_settings_repository=integration_settings_repository)
 
 
+def get_resume_fetch_service(
+    candidate_repository: CandidateRepository = Depends(get_candidate_repository),
+    zoho_recruit_client: ZohoRecruitClient = Depends(get_zoho_recruit_client),
+) -> ResumeFetchService:
+    return ResumeFetchService(
+        candidate_repository=candidate_repository,
+        zoho_recruit_client=zoho_recruit_client,
+    )
+
+
 def get_sync_service(
     sync_log_repository: SyncLogRepository = Depends(get_sync_log_repository),
     candidate_repository: CandidateRepository = Depends(get_candidate_repository),
@@ -189,6 +211,7 @@ def get_sync_service(
     normalization_service: NormalizationService = Depends(get_normalization_service),
     zoho_oauth_client: ZohoOAuthClient = Depends(get_zoho_oauth_client),
     zoho_recruit_client: ZohoRecruitClient = Depends(get_zoho_recruit_client),
+    resume_fetch_service: ResumeFetchService = Depends(get_resume_fetch_service),
 ) -> SyncService:
     return SyncService(
         sync_log_repository=sync_log_repository,
@@ -199,6 +222,7 @@ def get_sync_service(
         normalization_service=normalization_service,
         zoho_oauth_client=zoho_oauth_client,
         zoho_recruit_client=zoho_recruit_client,
+        resume_fetch_service=resume_fetch_service,
     )
 
 
@@ -270,3 +294,4 @@ def require_roles(*allowed_roles: str) -> Callable[[User], User]:
         return current_recruiter
 
     return role_dependency
+

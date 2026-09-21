@@ -1,0 +1,1406 @@
+{
+  "total_fields": 280,
+  "sample_size": 50,
+  "fields": {
+    "Origin": {
+      "count": 50,
+      "type": "str",
+      "sample": "Applied"
+    },
+    "Client_Interview": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "L5_Interview_URL": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Client_Reject": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Staffing_Role": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Performance_Bonus": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "L4_Hour": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "L1_Interview_Mode": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "CTC_A_B_C": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Department": {
+      "count": 4,
+      "type": "null",
+      "sample": "Data & Analytics"
+    },
+    "$process_flow": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Visa_Status": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Full_Address": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Senior_Leadership_Date": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "GMC": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Status": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Source_Form": {
+      "count": 45,
+      "type": "str",
+      "sample": "LinkedIn"
+    },
+    "Travel_Cost": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "$approval": {
+      "count": 50,
+      "type": "dict",
+      "sample": "{'delegate': False, 'approve': False, 'reject': False, 'resu"
+    },
+    "Last_Mailed_Time": {
+      "count": 4,
+      "type": "null",
+      "sample": "2025-06-25T15:53:58+05:30"
+    },
+    "Hiring_Mode": {
+      "count": 4,
+      "type": "null",
+      "sample": "Permanent"
+    },
+    "Preferred_Work_Location": {
+      "count": 4,
+      "type": "null",
+      "sample": "Bangalore"
+    },
+    "Bonus": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Current_Location_Website": {
+      "count": 45,
+      "type": "str",
+      "sample": "India"
+    },
+    "Associated_Tags": {
+      "count": 50,
+      "type": "list",
+      "sample": "[]"
+    },
+    "Client_Screen_Status": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Management_s_time_cost": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Push_to_Laptop_Shipment": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "L2_Hour": {
+      "count": 1,
+      "type": "null",
+      "sample": "1"
+    },
+    "Aadhar_New": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Cost_Approval_sent_date": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "LEADPORTALSTATUS": {
+      "count": 50,
+      "type": "str",
+      "sample": "To-be-invited"
+    },
+    "Proposed_CTC_after_Negotiation": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "House_Rent_Allowance": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Internal_Evaluate_Date": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Cost_Approved_Date": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Internship_End_Date": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Profile_Sent_Date": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Job_Title_as_per_Kanini_Function": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Total_2": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "No_Shows": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Basic_Monthly": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Department1": {
+      "count": 4,
+      "type": "null",
+      "sample": "IT Application Development"
+    },
+    "Practice1": {
+      "count": 10,
+      "type": "str",
+      "sample": "Product Engineering"
+    },
+    "Overall_IT_Experince": {
+      "count": 4,
+      "type": "null",
+      "sample": "7.2"
+    },
+    "Availblity": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Function_Department": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "The_Amount": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Cost_Per_Hour_USD1": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Client_Submission": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Laptop_Delivered": {
+      "count": 50,
+      "type": "str",
+      "sample": "No"
+    },
+    "Employee_Details": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Annual_CTC_USD": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Recruiters_Email_ID": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Status1": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Gross_Pay_A": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Is_Wavier_Applicable": {
+      "count": 1,
+      "type": "null",
+      "sample": "No"
+    },
+    "Staffing_Clients": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Employee_Type": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Client_Name": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Email": {
+      "count": 50,
+      "type": "str",
+      "sample": "moddu.krishna@gmail.com"
+    },
+    "$currency_symbol": {
+      "count": 50,
+      "type": "str",
+      "sample": "\u20b9"
+    },
+    "Current_Location_of_Candidate_KANINI_Work_Locati": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Last_Activity_Time": {
+      "count": 50,
+      "type": "str",
+      "sample": "2026-05-13T11:37:58+05:30"
+    },
+    "GDPR_Consent_Date": {
+      "count": 1,
+      "type": "null",
+      "sample": "2025-06-02"
+    },
+    "Client_Submission_Date": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "$converted": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Remarks": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Checkbox": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Data_Processing_Basis_Details": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Zip_Code": {
+      "count": 2,
+      "type": "null",
+      "sample": "600 125"
+    },
+    "$approved": {
+      "count": 50,
+      "type": "bool",
+      "sample": "True"
+    },
+    "Cost_involved_to_Vendor_Emp_Refferal": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Reporting_To": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Accuracy1": {
+      "count": 1,
+      "type": "null",
+      "sample": "2"
+    },
+    "Felxi_Other_AllowanceBenefit_Plan_Monthly": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Client_Interview_Date": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "People_Record_ID": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "GDPR_Consent_Status": {
+      "count": 50,
+      "type": "str",
+      "sample": "Opt-In not requested"
+    },
+    "L3_Job_Role": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Health_Insurance_Monthly": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Candidate_ID": {
+      "count": 50,
+      "type": "str",
+      "sample": "ZR_57716_CAND"
+    },
+    "Client_Selected_Date": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "L2_Interview_Mode": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "GDPR_Consent_Mode": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "LinkedIn__s": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Is_Locked": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "L4_Interview": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Approval_Status": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Notice_Period": {
+      "count": 1,
+      "type": "null",
+      "sample": "immediate"
+    },
+    "Fixed_Cost_A_B_Monthly": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Send_Mail_test": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "State": {
+      "count": 4,
+      "type": "null",
+      "sample": "Tamil Nadu"
+    },
+    "L3_Interview_Mode": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "VP": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Is_Attachment_Present": {
+      "count": 50,
+      "type": "bool",
+      "sample": "True"
+    },
+    "Client_Interview_Cost": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Work_Mode_Location": {
+      "count": 1,
+      "type": "null",
+      "sample": "Hybrid"
+    },
+    "Cost_Per_Hour_USD": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Background_Check_Completed": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Specify_comments1": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Internal_Select": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Total_USA": {
+      "count": 14,
+      "type": "int",
+      "sample": "0"
+    },
+    "Rating": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Projects": {
+      "count": 4,
+      "type": "null",
+      "sample": "DaVita"
+    },
+    "$social_profiles": {
+      "count": 50,
+      "type": "str",
+      "sample": "||||||||||||"
+    },
+    "Checkbox_5": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Current_CTC_In_Words": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Email_Optional": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Nick_Name": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Approved_Comments": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Quality": {
+      "count": 1,
+      "type": "null",
+      "sample": "2"
+    },
+    "Internship_Completion_Certificate": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Last_Followed_Up_Date": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Previous_Proposed_CTC": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Want_to_Revise_a_Cost_Sheet": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Background_check_Mail_to_Candidate": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Years_of_Exp_Exp_Slab": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Date_Of_Birth": {
+      "count": 1,
+      "type": "null",
+      "sample": "1988-12-14"
+    },
+    "One_Time_Earning_C": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Total_Years_of_Exp_Relevant_Years_of_Exp1": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Applied_Job_ID": {
+      "count": 45,
+      "type": "int",
+      "sample": "2360"
+    },
+    "Client_Rejected_Date": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Basic_Pay": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Innovation_and_Value_Addition": {
+      "count": 1,
+      "type": "null",
+      "sample": "2"
+    },
+    "Resource_Availability_and_Expertise": {
+      "count": 1,
+      "type": "null",
+      "sample": "2"
+    },
+    "Source_Direct_Job_Portal_Vendor_Emp_Refer": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Remarks_for_Hiring_Decision": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "DND": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "HR_Leadership_Date": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "$approval_state": {
+      "count": 50,
+      "type": "str",
+      "sample": "approved"
+    },
+    "Salary_Breakup_Enable": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Account": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "BCG_Initiate_mail_to_David": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Date_of_Offer": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Hiring_Decision": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Referral_Comments": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Expected_date_of_joining": {
+      "count": 4,
+      "type": "null",
+      "sample": "2025-06-23"
+    },
+    "GTLI": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Laptop_Provided_by_Kanin_Client": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Skill_Set": {
+      "count": 49,
+      "type": "str",
+      "sample": "Object Oriented Analysis/Design, UML/OMT, C++, Microsoft C-S"
+    },
+    "Approval_Comments": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Relevant_Exp": {
+      "count": 4,
+      "type": "null",
+      "sample": "7.2"
+    },
+    "$state": {
+      "count": 50,
+      "type": "str",
+      "sample": "save"
+    },
+    "Job_Role_as_per_Kanini": {
+      "count": 4,
+      "type": "null",
+      "sample": "Data Scientist"
+    },
+    "Updated_On": {
+      "count": 50,
+      "type": "str",
+      "sample": "2026-05-13T11:37:58+05:30"
+    },
+    "Classification": {
+      "count": 4,
+      "type": "null",
+      "sample": "Irrelevant"
+    },
+    "List_of_Visa": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Name_of_Recruiter": {
+      "count": 4,
+      "type": "null",
+      "sample": "Deepshikha Mahato"
+    },
+    "id": {
+      "count": 50,
+      "type": "str",
+      "sample": "2887000025380930"
+    },
+    "Is_this_employee_a_Studio_Lead_TDM": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Life_Insurance_Monthly": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Candidate_Status": {
+      "count": 50,
+      "type": "str",
+      "sample": "New"
+    },
+    "Position": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Created_Time": {
+      "count": 50,
+      "type": "str",
+      "sample": "2025-06-06T10:52:59+05:30"
+    },
+    "Profile_Sourced_Date": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Resume_Sourced_Date": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Reason_for_Not_Joining": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Other_Allowance": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Name_of_Source": {
+      "count": 1,
+      "type": "null",
+      "sample": "Vinayak"
+    },
+    "Internship_Start_Date": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Candidate_type": {
+      "count": 1,
+      "type": "null",
+      "sample": "On Contract"
+    },
+    "Contract_type": {
+      "count": 2,
+      "type": "null",
+      "sample": "C2C"
+    },
+    "Current_CTC_Expected_CTC": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "HR_Spoc": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Country": {
+      "count": 5,
+      "type": "null",
+      "sample": "India"
+    },
+    "Created_By": {
+      "count": 50,
+      "type": "dict",
+      "sample": "{'name': 'Zoho Admin', 'id': '2887000015074112'}"
+    },
+    "Remarks1": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "L5_Hour": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Stipend_start_month": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "ATR_Number": {
+      "count": 4,
+      "type": "null",
+      "sample": "{'name': 'Davita', 'id': '2887000024429084'}"
+    },
+    "Date_of_Joining": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Misc_Expenses": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Panelist_L3": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Collect_Document": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Diversity": {
+      "count": 1,
+      "type": "null",
+      "sample": "Male"
+    },
+    "Practice": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Client_Feedback": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Other_sourcing_Social_Media": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "CTC_In_word": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Salutation": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "WorkStream": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Full_Name": {
+      "count": 50,
+      "type": "str",
+      "sample": "Krishna"
+    },
+    "L4_Job_Role": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Current_Work_Location": {
+      "count": 4,
+      "type": "null",
+      "sample": "Chennai"
+    },
+    "Cost_Per_Hour_INR": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Experience_in_Yrs": {
+      "count": 49,
+      "type": "int",
+      "sample": "19"
+    },
+    "Percentage_CTC": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Employment_Commitment_Period": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "L3_Hour": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Feedback_Mail": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Onsite_Remote": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Facebook__s": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Billing_Status": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "L1_Job_Role": {
+      "count": 3,
+      "type": "null",
+      "sample": "{'name': 'Data Scientist', 'id': '2887000020529884'}"
+    },
+    "Practice_Email_Id": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "TAT_Ratings1": {
+      "count": 1,
+      "type": "null",
+      "sample": "2"
+    },
+    "Associated_any_Social_Profiles": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Internal_Employee__s": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Intern_Type": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Panelist_L1": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Panelist_L2": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Did_the_candidate_participate_in_levels_exceeding": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Employer_Details": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Final_Job_Role": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Kanini_WFO": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "$whatsapp_available": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "US_Emp_Referral_Round_Robbin": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Is_Blocked__s": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "House_Rent_Allowance_Monthly": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Gratuity": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Profiles_Scheduled": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Highest_Qualification_Held": {
+      "count": 4,
+      "type": "null",
+      "sample": "Master of Business Administration"
+    },
+    "jobid": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Aadhaar_No": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Feedback_Average": {
+      "count": 15,
+      "type": "int",
+      "sample": "0"
+    },
+    "URL_1": {
+      "count": 23,
+      "type": "str",
+      "sample": "https://www.linkedin.com/in/krishna-moddu/"
+    },
+    "L2_Job_Role": {
+      "count": 1,
+      "type": "null",
+      "sample": "{'name': 'Data Scientist', 'id': '2887000020529884'}"
+    },
+    "Team_Member_Contact": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Client": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Gross_Pay_A_Monthly": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Internal_Reject": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "$followed": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Candidate_Owner": {
+      "count": 50,
+      "type": "dict",
+      "sample": "{'name': 'Shanjeev Karuppanasamy', 'id': '2887000013707014'}"
+    },
+    "$editable": {
+      "count": 50,
+      "type": "bool",
+      "sample": "True"
+    },
+    "Update_Field": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Profiles_Sourced": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "City": {
+      "count": 5,
+      "type": "null",
+      "sample": "Chennai"
+    },
+    "Is_Unqualified": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Push_to_People": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Date_of_Submission": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Referred_by_Employee__s": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Serving_Notice_LWD": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Recruiter_Mobile_No": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "KANINI_Work_Location": {
+      "count": 1,
+      "type": "null",
+      "sample": "Bangalore"
+    },
+    "Client_Select": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "L1_Interview_URL": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Project_Team": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Reply_Received_Date": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Emp_Referral_Round_Robbin": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Laptop_Delivery_Address": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Vendor_Name": {
+      "count": 1,
+      "type": "null",
+      "sample": "Antal International"
+    },
+    "Senior_Leadership_Connect": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "$applied_with_linkedin": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "L1_Hour": {
+      "count": 3,
+      "type": "null",
+      "sample": "0.5"
+    },
+    "Discussion_with_Respective_Project_Stakeholder": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Source": {
+      "count": 50,
+      "type": "str",
+      "sample": "Embed"
+    },
+    "DND_2": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "First_Name": {
+      "count": 5,
+      "type": "null",
+      "sample": "Khasim"
+    },
+    "Sent_for_Approval": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "L2_Interview_URL": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "No_of_months": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Phone": {
+      "count": 49,
+      "type": "str",
+      "sample": "+919886290791"
+    },
+    "Condition_for_Send_for_Approval": {
+      "count": 50,
+      "type": "str",
+      "sample": "0"
+    },
+    "Final_Interview_URL": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Multi_Line_6": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "HR_Leadership_time_cost": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Training_Development": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Leadership_Call_Done": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Declaration": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Job_Title_as_per_KANINI": {
+      "count": 1,
+      "type": "null",
+      "sample": "Junior Associate"
+    },
+    "Is_it_shared_with_client": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "PF_Contribution_Employer": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "In_Person_Interview": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Client_Interview_Status": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Emp_ID": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Send_for_Approval": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "L4_Interview_URL": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Comments": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "$converted_detail": {
+      "count": 50,
+      "type": "dict",
+      "sample": "{}"
+    },
+    "Gratuity_Monthly": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Vendor": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Send_a_mail_to_finance": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "Joining_Bonus": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "L3_L4_Interview": {
+      "count": 50,
+      "type": "bool",
+      "sample": "False"
+    },
+    "CTC": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Pre_Screening_Check_3rd_Party": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "Last_Name": {
+      "count": 50,
+      "type": "str",
+      "sample": "Krishna"
+    },
+    "Vendor_s_Cost": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    },
+    "CTC_Monthly": {
+      "count": 0,
+      "type": "null",
+      "sample": null
+    }
+  }
+}

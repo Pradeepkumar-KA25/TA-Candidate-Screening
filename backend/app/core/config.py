@@ -22,8 +22,9 @@ class Settings(BaseSettings):
     zoho_recruit_base_url: str = "https://recruit.zoho.com/recruit/v2"
     zoho_client_id: str | None = None
     zoho_client_secret: str | None = None
-    zoho_connection_timeout_seconds: float = 10.0
-    zoho_sync_max_records: int = 2000
+    zoho_connection_timeout_seconds: float = 30.0
+    zoho_sync_max_records: int = 200
+    zoho_resume_storage_path: str = "uploads/resumes"
     ollama_base_url: str | None = None
     ollama_host: str | None = None
     ollama_model: str = "llama3.1"
@@ -44,3 +45,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+

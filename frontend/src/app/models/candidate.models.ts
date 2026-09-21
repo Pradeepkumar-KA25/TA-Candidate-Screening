@@ -93,6 +93,9 @@ export interface CandidateDetailResponse {
   source: string;
   created_at: string;
   updated_at: string;
+  resume_url: string | null;
+  resume_file_name: string | null;
+  resume_last_fetched_at: string | null;
   normalized_data: CandidateNormalizedPair[];
   match_context: CandidateMatchContext;
   extended_fields: CandidateExtendedFields;

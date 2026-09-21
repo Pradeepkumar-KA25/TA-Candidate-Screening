@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from uuid import UUID
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, Path, Query, status
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from app.core.dependencies import get_candidate_service, require_roles
@@ -170,3 +172,90 @@ async def delete_candidate(
 ) -> dict:
     candidate_service.delete_candidate(candidate_id)
     return {"message": "Candidate deleted successfully"}
+
+
+@candidate_router.get(
+    "/{candidate_id}/resume",
+    status_code=status.HTTP_200_OK,
+    responses={
+        401: {"model": ErrorResponse, "description": "Missing, invalid, or expired token"},
+        403: {"model": ErrorResponse, "description": "Role is not allowed to access this endpoint"},
+        404: {"model": ErrorResponse, "description": "Candidate or resume not found"},
+    },
+    summary="Get candidate resume",
+    description="Returns the resume file for a candidate if available. Supports PDF, DOCX, and other formats.",
+)
+async def get_candidate_resume(
+    candidate_id: UUID = Path(description="Candidate UUID"),
+    _: User = Depends(require_roles("Recruiter", "Admin")),
+    candidate_service: CandidateService = Depends(get_candidate_service),
+) -> FileResponse:
+    """Serve the candidate's resume file."""
+    from fastapi import HTTPException
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    logger.info(f"Resume request for candidate: {candidate_id}")
+    
+    # Get candidate to retrieve resume URL
+    candidate = candidate_service.get_candidate_details(candidate_id)
+    logger.info(f"Candidate found: {candidate.full_name}, resume_url: {candidate.resume_url}")
+    
+    if not candidate.resume_url:
+        logger.warning(f"No resume URL for candidate {candidate_id}")
+        raise HTTPException(status_code=404, detail="Resume not found for this candidate")
+    
+    # Construct absolute file path
+    # The resume_url is relative (e.g., "uploads/resumes/{candidate_id}/resume.pdf")
+    # Make it relative to the current working directory where the backend is running
+    resume_path = Path(candidate.resume_url)
+    logger.info(f"Resume path (relative): {resume_path}")
+    
+    # If not absolute, make it absolute relative to current directory
+    if not resume_path.is_absolute():
+        resume_path = Path.cwd() / resume_path
+        logger.info(f"Resume path (absolute): {resume_path}")
+    
+    if not resume_path.exists():
+        logger.error(f"Resume file not found: {resume_path}")
+        raise HTTPException(status_code=404, detail=f"Resume file not found at {resume_path}")
+    
+    # Verify file is readable and has content
+    try:
+        file_size = resume_path.stat().st_size
+        logger.info(f"Resume file size: {file_size} bytes")
+        
+        if file_size == 0:
+            logger.error(f"Resume file is empty: {resume_path}")
+            raise HTTPException(status_code=404, detail="Resume file is empty")
+        
+        # Check file signature
+        with open(str(resume_path), 'rb') as f:
+            first_bytes = f.read(20)
+            logger.info(f"File signature (first 20 bytes hex): {first_bytes.hex()}")
+    except OSError as e:
+        logger.error(f"Error accessing resume file: {e}")
+        raise HTTPException(status_code=404, detail=f"Cannot access resume file: {str(e)}")
+    
+    # Determine media type based on file extension
+    suffix = resume_path.suffix.lower()
+    media_type_map = {
+        ".pdf": "application/pdf",
+        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ".doc": "application/msword",
+        ".txt": "text/plain",
+    }
+    
+    media_type = media_type_map.get(suffix, "application/octet-stream")
+    
+    logger.info(f"Serving resume: {resume_path} with media type: {media_type}")
+    
+    # Return file with appropriate headers for display in iframe
+    return FileResponse(
+        path=str(resume_path),
+        media_type=media_type,
+        filename=candidate.resume_file_name or f"resume{suffix}",
+        headers={
+            "Content-Disposition": f"inline; filename=\"{candidate.resume_file_name or f'resume{suffix}'}\""
+        }
+    )

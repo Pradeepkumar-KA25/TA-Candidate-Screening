@@ -9,6 +9,7 @@ from app.repositories.duplicate_review_repository import DuplicateReviewReposito
 from app.repositories.job_description_repository import JobDescriptionRepository
 from app.repositories.shortlist_repository import ShortlistRepository
 from app.services.candidate_filter_service import CandidateFilterCriteria, CandidateFilterQueryComposer
+from app.services.field_normalizer import CandidateFieldNormalizer
 from app.schemas.candidates import (
     CandidateDetailResponse,
     CandidateExtendedFieldsResponse,
@@ -47,7 +48,7 @@ class CandidateService:
     job_description_repository: JobDescriptionRepository
     shortlist_repository: ShortlistRepository | None = None
     duplicate_review_repository: DuplicateReviewRepository | None = None
-    shortlist_repository: ShortlistRepository | None = None
+    resume_fetch_service: "ResumeFetchService | None" = None
     duplicate_review_repository: DuplicateReviewRepository | None = None
 
     def list_candidates(
@@ -135,7 +136,25 @@ class CandidateService:
             raise CandidateNotFoundError()
 
         normalized_data = self._extract_normalized_data(candidate.raw_payload or {}, candidate)
-        extended_fields = self._extract_extended_fields(candidate.raw_payload or {})
+        
+        # Build candidate fields dict to pass to normalizer
+        candidate_fields = {
+            'First_Name': candidate.full_name.split()[0] if candidate.full_name else None,
+            'Last_Name': ' '.join(candidate.full_name.split()[1:]) if candidate.full_name and len(candidate.full_name.split()) > 1 else '',
+            'Email': candidate.email,
+            'Phone': candidate.phone,
+            'Total_Experience_Years': candidate.total_experience_years,
+            'Current_Company': candidate.current_company,
+            'Current_Location': candidate.current_location,
+            'Skills': candidate.skills,
+            'Degree': candidate.degree,
+            'Status': candidate.status,
+            'Source': candidate.source,
+        }
+        # Filter out None values
+        candidate_fields = {k: v for k, v in candidate_fields.items() if v is not None}
+        
+        extended_fields = self._extract_extended_fields(candidate.raw_payload or {}, candidate_fields)
 
         return CandidateDetailResponse(
             id=candidate.id,
@@ -169,6 +188,16 @@ class CandidateService:
         if candidate is None:
             raise CandidateNotFoundError()
         
+        # Delete resume folder if service available
+        if self.resume_fetch_service:
+            try:
+                self.resume_fetch_service.delete_candidate_resumes(str(candidate_id))
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Failed to delete resume for candidate {candidate_id}: {str(e)}")
+                # Continue with candidate deletion even if resume deletion fails
+        
         self.repository.delete(candidate_id)
 
     def delete_candidates_batch(self, candidate_ids: list[UUID]) -> int:
@@ -186,6 +215,14 @@ class CandidateService:
                 
                 if candidate is not None:
                     logger.debug(f"Found candidate {candidate_id} (name={candidate.full_name})")
+                    
+                    # Delete resume folder if service available
+                    if self.resume_fetch_service:
+                        try:
+                            self.resume_fetch_service.delete_candidate_resumes(str(candidate_id))
+                            logger.debug(f"Deleted resume folder for candidate {candidate_id}")
+                        except Exception as e:
+                            logger.warning(f"Failed to delete resume for candidate {candidate_id}: {str(e)}")
                     
                     # Delete dependent records first to avoid foreign key constraint violations
                     if self.shortlist_repository:
@@ -365,98 +402,31 @@ class CandidateService:
         return f"{value} Days"
 
     @staticmethod
-    def _extract_extended_fields(raw_payload: dict) -> CandidateExtendedFieldsResponse:
-        """Extract and organize extended Zoho fields by category for display in accordion sections."""
+    def _extract_extended_fields(raw_payload: dict, candidate_fields: dict = None) -> CandidateExtendedFieldsResponse:
+        """
+        Extract and organize extended Zoho fields into logical business categories.
+        Uses CandidateFieldNormalizer to ensure consistent structure.
         
-        # Helper function to safely get value from raw_payload
-        def get_field(key: str) -> str | None:
-            value = raw_payload.get(key)
-            if value is None or value == "" or value == []:
-                return None
-            if isinstance(value, list):
-                return str(value[0]) if value else None
-            return str(value).strip() if str(value).strip() else None
-
-        personal_contact = {}
-        personal_fields = [
-            "Date_Of_Birth", "Full_Address", "Aadhaar_No", "Aadhar_New",
-            "Email_Optional", "LinkedIn__s", "Facebook__s", "Recruiter_Mobile_No"
-        ]
-        for field in personal_fields:
-            value = get_field(field)
-            if value:
-                personal_contact[CandidateService._format_field_name(field)] = value
-
-        employment = {}
-        employment_fields = [
-            "Date_of_Joining", "Employee_Type", "Employee_Details", "Emp_ID",
-            "Department", "Function_Department", "Practice", "Work_Mode_Location",
-            "Onsite_Remote", "WorkStream"
-        ]
-        for field in employment_fields:
-            value = get_field(field)
-            if value:
-                employment[CandidateService._format_field_name(field)] = value
-
-        interview_process = {}
-        interview_fields = [
-            "Applied_Job_ID", "Position", "Client", "Client_Name", "Candidate_Owner",
-            "Hiring_Decision", "Hiring_Mode", "L1_Interview_Mode", "L1_Interview_URL",
-            "L1_Job_Role", "L1_Hour", "L2_Interview_Mode", "L2_Interview_URL",
-            "L2_Job_Role", "L2_Hour", "L3_Interview_Mode", "L3_Job_Role", "L3_Hour",
-            "L4_Interview", "L4_Interview_URL", "L4_Job_Role", "L4_Hour",
-            "L5_Interview_URL", "Client_Interview_Status", "Client_Interview_Date",
-            "Panelist_L1", "Panelist_L2", "Panelist_L3"
-        ]
-        for field in interview_fields:
-            value = get_field(field)
-            if value:
-                interview_process[CandidateService._format_field_name(field)] = value
-
-        candidate_lifecycle = {}
-        lifecycle_fields = [
-            "Date_of_Offer", "Date_of_Submission", "Profile_Sent_Date",
-            "Resume_Sourced_Date", "Candidate_Status", "LEADPORTALSTATUS",
-            "Is_Blocked__s", "Is_Locked", "Is_Unqualified"
-        ]
-        for field in lifecycle_fields:
-            value = get_field(field)
-            if value:
-                candidate_lifecycle[CandidateService._format_field_name(field)] = value
-
-        salary_benefits = {}
-        salary_fields = [
-            "Annual_CTC_USD", "Basic_Pay", "Gross_Pay_A", "House_Rent_Allowance",
-            "Performance_Bonus", "Joining_Bonus", "PF_Contribution_Employer",
-            "Gratuity", "Life_Insurance_Monthly", "GMC", "GTLI"
-        ]
-        for field in salary_fields:
-            value = get_field(field)
-            if value:
-                salary_benefits[CandidateService._format_field_name(field)] = value
-
-        referral_vendor_sourcing = {}
-        referral_fields = [
-            "Vendor", "Vendor_Name", "Name_of_Source", "Name_of_Recruiter",
-            "Referred_by_Employee__s", "Referral_Comments",
-            "Source_Direct_Job_Portal_Vendor_Emp_Refer"
-        ]
-        for field in referral_fields:
-            value = get_field(field)
-            if value:
-                referral_vendor_sourcing[CandidateService._format_field_name(field)] = value
-
+        Args:
+            raw_payload: Raw Zoho API response fields
+            candidate_fields: Regular candidate model fields to include (First_Name, Email, etc.)
+        """
+        # Normalize the raw payload into organized categories
+        normalized = CandidateFieldNormalizer.normalize(raw_payload, candidate_fields)
+        
+        # Convert normalized dict to CandidateExtendedFieldsResponse
+        # The response object stores the entire normalized dict
         return CandidateExtendedFieldsResponse(
-            personal_contact=personal_contact,
-            employment=employment,
-            interview_process=interview_process,
-            candidate_lifecycle=candidate_lifecycle,
-            salary_benefits=salary_benefits,
-            referral_vendor_sourcing=referral_vendor_sourcing,
+            personal_contact=normalized.get('Personal Information', {}),
+            employment=normalized.get('Employment Details', {}),
+            interview_process=normalized.get('Interview Process', {}),
+            candidate_lifecycle=normalized.get('Candidate Lifecycle', {}),
+            salary_benefits=normalized.get('Salary & Benefits', {}),
+            referral_vendor_sourcing=normalized.get('Referral & Sourcing', {}),
+            contact_address=normalized.get('Contact & Address', {}),
+            professional_details=normalized.get('Professional Details', {}),
+            education_qualifications=normalized.get('Education & Qualifications', {}),
+            application_recruitment=normalized.get('Application & Recruitment', {}),
+            system_metadata=normalized.get('System & Metadata', {}),
+            other_fields=normalized.get('Other Fields', {}),
         )
-
-    @staticmethod
-    def _format_field_name(field: str) -> str:
-        """Convert Zoho API field name to readable label."""
-        # Replace underscores with spaces and convert to title case
-        return field.replace("_", " ").title()
