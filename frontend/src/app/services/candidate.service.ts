@@ -170,4 +170,10 @@ export class CandidateService {
         })
       );
   }
+
+  getResumeAsBlob(candidateId: string): Observable<Blob> {
+    return this.httpClient.get(`${this.apiBaseUrl}/candidates/${candidateId}/resume`, {
+      responseType: 'blob',
+    });
+  }
 }

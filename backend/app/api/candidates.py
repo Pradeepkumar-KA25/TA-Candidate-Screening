@@ -3,7 +3,7 @@ from __future__ import annotations
 from uuid import UUID
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, Path, Query, status
+from fastapi import APIRouter, Depends, Path as FastAPIPath, Query, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
@@ -147,7 +147,7 @@ async def delete_candidates_batch(
     ),
 )
 async def get_candidate_details(
-    candidate_id: UUID = Path(description="Candidate UUID"),
+    candidate_id: UUID = FastAPIPath(description="Candidate UUID"),
     _: User = Depends(require_roles("Recruiter", "Admin")),
     candidate_service: CandidateService = Depends(get_candidate_service),
 ) -> CandidateDetailResponse:
@@ -166,7 +166,7 @@ async def get_candidate_details(
     description="Deletes a candidate from the database. Admin role required.",
 )
 async def delete_candidate(
-    candidate_id: UUID = Path(description="Candidate UUID"),
+    candidate_id: UUID = FastAPIPath(description="Candidate UUID"),
     _: User = Depends(require_roles("Admin")),
     candidate_service: CandidateService = Depends(get_candidate_service),
 ) -> dict:
@@ -186,7 +186,7 @@ async def delete_candidate(
     description="Returns the resume file for a candidate if available. Supports PDF, DOCX, and other formats.",
 )
 async def get_candidate_resume(
-    candidate_id: UUID = Path(description="Candidate UUID"),
+    candidate_id: UUID = FastAPIPath(..., description="Candidate UUID"),
     _: User = Depends(require_roles("Recruiter", "Admin")),
     candidate_service: CandidateService = Depends(get_candidate_service),
 ) -> FileResponse:

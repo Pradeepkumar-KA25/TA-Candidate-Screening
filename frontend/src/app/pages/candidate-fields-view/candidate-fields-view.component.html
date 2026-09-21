@@ -11,7 +11,7 @@
         <h1 class="page-title">{{ safeName(candidate?.full_name) }}</h1>
       </div>
       <div class="header-actions">
-        <button class="action-btn secondary" (click)="downloadResume()" [disabled]="!candidate?.resume_url">
+        <button class="action-btn secondary" (click)="downloadResume()" title="View resume">
           📄 Resume
         </button>
         <button class="action-btn secondary" (click)="deleteCandidate()">
@@ -35,21 +35,6 @@
   <!-- Main Content -->
   <div *ngIf="!loading && candidate" class="content-wrapper">
     
-    <!-- Resume Preview Section (if available) -->
-    <div class="resume-section" *ngIf="candidate.resume_url">
-      <div class="resume-card">
-        <div class="resume-icon">📄</div>
-        <div class="resume-info">
-          <h4>Resume on File</h4>
-          <p>{{ candidate.resume_file_name || 'resume.pdf' }}</p>
-          <small>Updated: {{ candidate.resume_last_fetched_at | date: 'short' }}</small>
-        </div>
-        <a class="resume-link" [href]="'/api/v1/candidates/' + candidate.id + '/resume'" target="_blank">
-          View
-        </a>
-      </div>
-    </div>
-
     <!-- Field Groups -->
     <div class="field-groups-container">
       <app-candidate-field-section 
@@ -64,29 +49,5 @@
   <div *ngIf="!loading && !candidate && !errorMessage" class="empty-state">
     <p>No candidate found</p>
     <button class="back-button" (click)="goBack()">Go Back</button>
-  </div>
-
-  <!-- Resume Viewer Modal -->
-  <div class="resume-viewer-overlay" *ngIf="showResumeViewer" (click)="closeResumeViewer()">
-    <div class="resume-viewer-modal" (click)="$event.stopPropagation()">
-      <div class="resume-viewer-header">
-        <h2>Resume - {{ safeName(candidate?.full_name) }}</h2>
-        <div class="resume-viewer-actions">
-          <button class="download-btn" (click)="downloadResumeFile()" title="Download resume">
-            ⬇️ Download
-          </button>
-          <button class="close-btn" (click)="closeResumeViewer()" title="Close">
-            ✕
-          </button>
-        </div>
-      </div>
-      <div class="resume-viewer-container">
-        <iframe 
-          [src]="resumeUrl" 
-          class="resume-iframe"
-          title="Resume viewer">
-        </iframe>
-      </div>
-    </div>
   </div>
 </div>

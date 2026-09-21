@@ -2,7 +2,6 @@ import { Component, OnInit, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 import { CandidateDetailResponse } from '../../models/candidate.models';
 import { CandidateService } from '../../services/candidate.service';
@@ -26,14 +25,11 @@ export class CandidateFieldsViewComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly candidateService = inject(CandidateService);
   private readonly fieldsService = inject(CandidateFieldsService);
-  private readonly sanitizer = inject(DomSanitizer);
 
   candidate: CandidateDetailResponse | null = null;
   fieldGroups: FieldGroup[] = [];
   loading = true;
   errorMessage: string | null = null;
-  showResumeViewer = false;
-  resumeUrl: SafeResourceUrl | null = null;
 
   ngOnInit(): void {
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
@@ -89,15 +85,22 @@ export class CandidateFieldsViewComponent implements OnInit {
       return;
     }
 
-    // Show resume in embedded viewer
-    const resumeUrl = `/api/v1/candidates/${this.candidate.id}/resume`;
-    this.resumeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(resumeUrl);
-    this.showResumeViewer = true;
-  }
-
-  closeResumeViewer(): void {
-    this.showResumeViewer = false;
-    this.resumeUrl = null;
+    // Fetch resume with authentication and open in browser
+    this.candidateService
+      .getResumeAsBlob(this.candidate.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (blob) => {
+          const blobUrl = URL.createObjectURL(blob);
+          window.open(blobUrl, '_blank');
+          // Clean up the blob URL after a short delay
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        },
+        error: (error) => {
+          console.error('Error fetching resume:', error);
+          alert('Unable to open resume. Please try again.');
+        },
+      });
   }
 
   safeName(value: string | null | undefined): string {
@@ -115,15 +118,6 @@ export class CandidateFieldsViewComponent implements OnInit {
   onFieldGroupToggled(group: FieldGroup): void {
     // Handle any side effects if needed
     console.log(`Toggled field group: ${group.category}, expanded: ${group.expanded}`);
-  }
-
-  downloadResumeFile(): void {
-    if (!this.candidate?.resume_url) return;
-    const resumeUrl = `/api/v1/candidates/${this.candidate.id}/resume`;
-    const link = document.createElement('a');
-    link.href = resumeUrl;
-    link.download = this.candidate.resume_file_name || 'resume';
-    link.click();
   }
 }
 

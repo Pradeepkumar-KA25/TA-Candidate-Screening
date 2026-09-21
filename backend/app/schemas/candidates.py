@@ -83,6 +83,9 @@ class CandidateDetailResponse(BaseModel):
     source: str | None = None
     created_at: datetime
     updated_at: datetime
+    resume_url: str | None = None
+    resume_file_name: str | None = None
+    resume_last_fetched_at: datetime | None = None
     normalized_data: list[CandidateNormalizedPairResponse]
     match_context: CandidateMatchContextResponse
     extended_fields: CandidateExtendedFieldsResponse
