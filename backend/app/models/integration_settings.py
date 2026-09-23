@@ -29,7 +29,7 @@ class IntegrationSettings(Base):
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     next_candidate_sync_page: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
     auto_sync_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
-    auto_sync_interval_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=5, server_default="5")
+    auto_sync_interval_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=2, server_default="2")
     last_auto_sync_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(

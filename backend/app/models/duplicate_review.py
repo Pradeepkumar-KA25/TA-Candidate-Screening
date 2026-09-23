@@ -13,9 +13,9 @@ class DuplicateReview(Base):
     __tablename__ = "duplicate_reviews"
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
-    candidate_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("candidates.id"), nullable=False, index=True)
+    candidate_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("candidates.id", ondelete="CASCADE"), nullable=False, index=True)
     matched_candidate_id: Mapped[UUID] = mapped_column(
-        Uuid(as_uuid=True), ForeignKey("candidates.id"), nullable=False, index=True
+        Uuid(as_uuid=True), ForeignKey("candidates.id", ondelete="CASCADE"), nullable=False, index=True
     )
     match_basis: Mapped[str] = mapped_column(Text, nullable=False)
     confidence: Mapped[float] = mapped_column(Float, nullable=False)

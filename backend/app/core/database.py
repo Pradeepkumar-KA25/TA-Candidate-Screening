@@ -26,5 +26,9 @@ def get_db_session() -> Generator[Session, None, None]:
     session = get_session_factory()()
     try:
         yield session
+        session.commit()  # Commit if no exception occurred
+    except Exception:
+        session.rollback()  # Rollback if exception occurred
+        raise
     finally:
         session.close()

@@ -6,7 +6,7 @@ import { AppShellComponent } from '../app-shell/app-shell.component';
 import { AuthService } from '../../services/auth.service';
 import { IntegrationService } from '../../services/integration.service';
 
-type ActiveNavigation = 'dashboard' | 'candidates' | 'filters' | 'ranking' | 'shortlists' | 'duplicates' | 'settings' | 'resume-generator' | 'my-resumes' | 'create-template';
+type ActiveNavigation = 'dashboard' | 'candidates' | 'filters' | 'ranking' | 'shortlists' | 'duplicates' | 'settings' | 'resume-generator' | 'my-resumes' | 'create-template' | 'resume-enrichment';
 
 @Component({
   selector: 'app-layout',
@@ -52,6 +52,8 @@ export class AppLayoutComponent {
       this.setRouteContext('resume-generator', 'Resume Generator');
     } else if (cleanUrl.startsWith('/my-resumes')) {
       this.setRouteContext('my-resumes', 'My Resumes');
+    } else if (cleanUrl.startsWith('/resume-enrichment')) {
+      this.setRouteContext('resume-enrichment', 'Resume Enrichment');
     } else if (cleanUrl.startsWith('/create-template')) {
       this.setRouteContext('create-template', 'Create Template');
     } else if (cleanUrl.startsWith('/sync-complete')) {

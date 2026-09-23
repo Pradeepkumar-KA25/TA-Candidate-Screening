@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import {
   LucideChartNoAxesCombined,
   LucideCopy,
+  LucideFileCheck,
   LucideFileText,
   LucideFiles,
   LucideLayout,
@@ -29,6 +30,7 @@ import { AppTheme, ThemeService } from '../../services/theme.service';
     RouterLink,
     LucideChartNoAxesCombined,
     LucideCopy,
+    LucideFileCheck,
     LucideFileText,
     LucideFiles,
     LucideLayout,
@@ -47,7 +49,7 @@ import { AppTheme, ThemeService } from '../../services/theme.service';
   styleUrl: './app-shell.component.css',
 })
 export class AppShellComponent implements OnInit {
-  @Input() activeNav: 'dashboard' | 'candidates' | 'filters' | 'ranking' | 'shortlists' | 'duplicates' | 'settings' | 'resume-generator' | 'my-resumes' | 'create-template' = 'dashboard';
+  @Input() activeNav: 'dashboard' | 'candidates' | 'filters' | 'ranking' | 'shortlists' | 'duplicates' | 'settings' | 'resume-generator' | 'my-resumes' | 'create-template' | 'resume-enrichment' = 'dashboard';
   @Input() headerContext = 'Dashboard';
   @Input() statusState: 'connected' | 'disconnected' = 'disconnected';
   @Input() recruiterName = 'Recruiter';

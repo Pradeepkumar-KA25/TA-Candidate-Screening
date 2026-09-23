@@ -94,14 +94,37 @@ class CandidateRepository:
         filters = []
         keyword = q.strip().lower() if q else ""
         if keyword:
-            pattern = f"%{keyword}%"
-            filters.append(
-                or_(
+            # Check if this contains a comma (indicating multi-skill search)
+            if "," in q.strip():
+                # Multi-skill search: split by comma and filter empty entries
+                skills_to_search = [s.strip().lower() for s in q.strip().split(",") if s.strip()]
+                
+                # Apply AND logic: each skill must match in the skills array
+                for skill in skills_to_search:
+                    skill_pattern = f"%{skill}%"
+                    # Match skill in the skills JSON array - ALL skills must match
+                    filters.append(func.lower(cast(Candidate.skills, String)).like(skill_pattern))
+            else:
+                # Single keyword search across multiple fields including Zoho IDs
+                pattern = f"%{keyword}%"
+                search_conditions = [
                     func.lower(Candidate.full_name).like(pattern),
                     func.lower(Candidate.current_company).like(pattern),
                     func.lower(cast(Candidate.skills, String)).like(pattern),
-                )
-            )
+                    func.lower(Candidate.email).like(pattern),
+                ]
+                
+                # Handle Zoho ID searches - cast coalesced NULL values to string for proper comparison
+                # This allows searching for numeric Zoho IDs and formatted IDs like "ZR_55776_CAND"
+                zoho_candidate_id_pattern = func.lower(cast(func.coalesce(Candidate.zoho_candidate_id, ""), String)).like(pattern)
+                zoho_record_id_pattern = func.lower(cast(func.coalesce(Candidate.zoho_record_id, ""), String)).like(pattern)
+                candidate_id_pattern = func.lower(cast(func.coalesce(Candidate.candidate_id, ""), String)).like(pattern)
+                
+                search_conditions.append(zoho_candidate_id_pattern)
+                search_conditions.append(zoho_record_id_pattern)
+                search_conditions.append(candidate_id_pattern)
+                
+                filters.append(or_(*search_conditions))
 
         if filter_clauses:
             filters.extend(filter_clauses)
@@ -129,3 +152,21 @@ class CandidateRepository:
         if candidate:
             self.session.delete(candidate)
             self.session.commit()
+
+    def get_unreviewed_candidates(self, limit: int = 20) -> list[Candidate]:
+        """Get candidates that haven't been reviewed for resume enrichment yet."""
+        # Get candidates that have a resume and haven't been added to any review batch yet
+        from sqlalchemy import not_, exists
+        from app.models.candidate_review import CandidateReview
+
+        subquery = select(CandidateReview.candidate_id)
+        statement = (
+            select(Candidate)
+            .where(
+                Candidate.resume_url.isnot(None),  # Must have a resume
+                not_(exists(subquery.where(CandidateReview.candidate_id == Candidate.id))),  # Not yet reviewed
+            )
+            .order_by(Candidate.created_at.asc())
+            .limit(limit)
+        )
+        return list(self.session.scalars(statement).all())

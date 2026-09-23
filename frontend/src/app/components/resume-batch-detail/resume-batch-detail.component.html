@@ -1,0 +1,179 @@
+<div class="batch-detail-container">
+  <!-- Action Buttons -->
+  <div class="action-buttons-top">
+    <button class="btn btn-secondary btn-back" (click)="goBack()" [disabled]="loading">
+      ← Back to Batches
+    </button>
+    <button
+      class="btn btn-danger"
+      (click)="deleteBatch()"
+      [disabled]="loading || !batch"
+      title="Delete this batch and all related reviews"
+    >
+      🗑️ Delete Batch
+    </button>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading && !batch" class="loading-container">
+    <p>Loading batch details...</p>
+  </div>
+
+  <!-- Batch Details -->
+  <div *ngIf="batch" class="batch-detail-content">
+    <!-- Header -->
+    <div class="batch-header">
+      <div class="batch-title">
+        <h1>{{ batch.batch_number }}</h1>
+        <span [class]="'badge ' + getStatusClass(batch.status)">
+          {{ batch.status }}
+        </span>
+      </div>
+      <div class="batch-stats">
+        <div class="stat-card">
+          <div class="stat-label">Total</div>
+          <div class="stat-value">{{ batch.total_candidates }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Processed</div>
+          <div class="stat-value">{{ batch.processed_candidates }}</div>
+        </div>
+        <div class="stat-card highlight">
+          <div class="stat-label">Pending</div>
+          <div class="stat-value">{{ getPendingCount() }}</div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-label">Approved</div>
+          <div class="stat-value">{{ getApprovedCount() }}</div>
+        </div>
+        <div class="stat-card danger">
+          <div class="stat-label">Rejected</div>
+          <div class="stat-value">{{ getRejectedCount() }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-section">
+      <label>Overall Progress</label>
+      <div class="progress-bar-large">
+        <div class="progress-fill" [style.width.%]="getProgressPercentage()"></div>
+      </div>
+      <span class="progress-text">{{ getProgressPercentage() }}% Complete</span>
+    </div>
+
+    <!-- Batch Meta Info -->
+    <div class="batch-meta">
+      <div class="meta-item">
+        <strong>Created:</strong>
+        <span>{{ batch.created_at | date: 'medium' }}</span>
+      </div>
+      <div class="meta-item" *ngIf="batch.processing_started_at">
+        <strong>Processing Started:</strong>
+        <span>{{ batch.processing_started_at | date: 'medium' }}</span>
+      </div>
+      <div class="meta-item" *ngIf="batch.processing_completed_at">
+        <strong>Completed:</strong>
+        <span>{{ batch.processing_completed_at | date: 'medium' }}</span>
+      </div>
+      <div class="meta-item" *ngIf="batch.error_message">
+        <strong>Error:</strong>
+        <span class="error-text">{{ batch.error_message }}</span>
+      </div>
+    </div>
+
+    <!-- Candidates Table -->
+    <div class="candidates-section">
+      <h2>Candidates in Batch</h2>
+
+      <div *ngIf="batch.candidates.length === 0" class="empty-state">
+        <p>No candidates in this batch yet.</p>
+      </div>
+
+      <div *ngIf="batch.candidates.length > 0" class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Candidate Name</th>
+              <th>Status</th>
+              <th>Proposed Changes</th>
+              <th>Pending Fields</th>
+              <th>Reviewed At</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let candidate of batch.candidates">
+              <td>
+                <strong>{{ candidate.candidate_name }}</strong>
+              </td>
+              <td>
+                <span [class]="'badge ' + getApprovalStatusClass(candidate.approval_status)">
+                  {{ candidate.approval_status }}
+                </span>
+              </td>
+              <td>
+                <span *ngIf="candidate.proposed_changes.length > 0" class="badge-info">
+                  {{ candidate.proposed_changes.length }} fields
+                </span>
+                <span *ngIf="candidate.proposed_changes.length === 0" class="text-muted">
+                  —
+                </span>
+              </td>
+              <td>
+                <span
+                  *ngIf="getPendingChangesCount(candidate) > 0"
+                  class="badge-warning"
+                >
+                  {{ getPendingChangesCount(candidate) }} pending
+                </span>
+                <span *ngIf="getPendingChangesCount(candidate) === 0" class="text-muted">
+                  —
+                </span>
+              </td>
+              <td>
+                {{ candidate.reviewed_at ? (candidate.reviewed_at | date: 'short') : '—' }}
+              </td>
+              <td>
+                <button
+                  class="btn btn-sm btn-primary"
+                  (click)="reviewCandidate(candidate.id)"
+                  [disabled]="loading"
+                  title="Review and approve/reject changes"
+                >
+                  Review
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="batch.candidates.length > 0" class="pagination-container">
+      <button
+        class="btn btn-secondary"
+        (click)="previousPage()"
+        [disabled]="isPreviousDisabled()"
+      >
+        Previous
+      </button>
+      <span class="pagination-info">
+        Page {{ page }} of {{ Math.ceil(total / pageSize) }} ({{ total }} total candidates)
+      </span>
+      <button
+        class="btn btn-secondary"
+        (click)="nextPage()"
+        [disabled]="isNextDisabled()"
+      >
+        Next
+      </button>
+    </div>
+  </div>
+</div>

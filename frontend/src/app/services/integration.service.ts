@@ -72,7 +72,7 @@ export class IntegrationService {
       access_level: 'read_only',
       sync_type: 'manual',
       auto_sync_enabled: false,
-      auto_sync_interval_minutes: 5,
+      auto_sync_interval_minutes: 2,
       last_successful_sync_at: null,
       last_auto_sync_at: null,
       last_checked_at: new Date().toISOString(),

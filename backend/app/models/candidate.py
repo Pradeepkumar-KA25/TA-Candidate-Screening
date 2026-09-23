@@ -15,6 +15,7 @@ class Candidate(Base):
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     zoho_record_id: Mapped[str] = mapped_column(String(128), nullable=False, unique=True, index=True)
     zoho_candidate_id: Mapped[str | None] = mapped_column(String(128), nullable=True, unique=True, index=True)
+    candidate_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     phone: Mapped[str | None] = mapped_column(String(64), nullable=True)

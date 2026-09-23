@@ -496,6 +496,7 @@ class SyncService:
         return {
             "zoho_record_id": zoho_record_id,
             "zoho_candidate_id": zoho_candidate_id,
+            "candidate_id": self._extract_first(raw_candidate.get("Candidate_ID")),
             "full_name": full_name,
             "email": email,
             "phone": phone,

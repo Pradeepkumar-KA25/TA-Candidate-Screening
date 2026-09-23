@@ -39,6 +39,9 @@
       <a routerLink="/my-resumes" [class.active]="activeNav === 'my-resumes'" [attr.title]="sidebarCollapsed ? 'My Resumes' : null">
         <span class="nav-icon"><svg lucideFiles aria-hidden="true"></svg></span><span class="nav-text">My Resumes</span>
       </a>
+      <a routerLink="/resume-enrichment/batches" [class.active]="activeNav === 'resume-enrichment'" [attr.title]="sidebarCollapsed ? 'Resume Enrichment' : null">
+        <span class="nav-icon"><svg lucideFileCheck aria-hidden="true"></svg></span><span class="nav-text">Resume Enrichment</span>
+      </a>
       <a routerLink="/create-template" [class.active]="activeNav === 'create-template'" [attr.title]="sidebarCollapsed ? 'Create Template' : null">
         <span class="nav-icon"><svg lucideLayout aria-hidden="true"></svg></span><span class="nav-text">Create Template</span>
       </a>

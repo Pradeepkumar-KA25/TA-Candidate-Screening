@@ -19,6 +19,8 @@ class IntegrationSettingsRepository:
     def get_or_create(self, provider: str) -> IntegrationSettings:
         record = self.get_by_provider(provider)
         if record is not None:
+            # Refresh to get latest data in case it was updated outside this session
+            self.session.refresh(record)
             return record
 
         now = datetime.now(UTC)

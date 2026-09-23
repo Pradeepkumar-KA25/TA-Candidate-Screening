@@ -21,6 +21,7 @@ import { TemplateSelectionComponent } from './pages/resume-generator/templates/t
 import { ResumePreviewComponent } from './pages/resume-generator/preview/resume-preview.component';
 import { MyResumesComponent } from './pages/my-resumes/my-resumes.component';
 import { CreateTemplateComponent } from './pages/create-template/create-template.component';
+import { RESUME_ENRICHMENT_ROUTES } from './modules/resume-enrichment/resume-enrichment.routes';
 
 export const routes: Routes = [
 	{
@@ -59,6 +60,10 @@ export const routes: Routes = [
 				],
 			},
 			{ path: 'settings', component: SettingsComponent },
+			{
+				path: 'resume-enrichment',
+				children: RESUME_ENRICHMENT_ROUTES,
+			},
 			{ path: 'sync-candidates', component: SyncCandidatesComponent },
 			{ path: 'sync-complete/:syncId', component: SyncCompleteComponent },
 		],

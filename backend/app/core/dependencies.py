@@ -14,11 +14,14 @@ from app.models.user import User
 from app.repositories.activity_log_repository import ActivityLogRepository
 from app.repositories.auth_repository import AuthRepository
 from app.repositories.candidate_repository import CandidateRepository
+from app.repositories.candidate_review_repository import CandidateReviewRepository
 from app.repositories.duplicate_review_repository import DuplicateReviewRepository
 from app.repositories.integration_settings_repository import IntegrationSettingsRepository
 from app.repositories.job_description_repository import JobDescriptionRepository
 from app.repositories.normalization_rule_repository import NormalizationRuleRepository
+from app.repositories.proposed_field_change_repository import ProposedFieldChangeRepository
 from app.repositories.ranking_criteria_repository import RankingCriteriaRepository
+from app.repositories.review_batch_repository import ReviewBatchRepository
 from app.repositories.saved_filter_repository import SavedFilterRepository
 from app.repositories.shortlist_repository import ShortlistRepository
 from app.repositories.sync_log_repository import SyncLogRepository
@@ -34,6 +37,7 @@ from app.services.job_description_service import JobDescriptionService
 from app.services.normalization_service import NormalizationService
 from app.services.ranking_criteria_service import RankingCriteriaService
 from app.services.ranking_service import RankingService
+from app.services.resume_enrichment_service import ResumeEnrichmentService
 from app.services.resume_fetch_service import ResumeFetchService
 from app.services.saved_filter_service import SavedFilterService
 from app.services.sync_service import SyncService
@@ -251,6 +255,50 @@ def get_ranking_service(
         job_description_repository=job_description_repository,
         ranking_criteria_repository=ranking_criteria_repository,
         candidate_repository=candidate_repository,
+    )
+
+
+def get_review_batch_repository(session: Session = Depends(get_db_session)) -> ReviewBatchRepository:
+    return ReviewBatchRepository(session)
+
+
+def get_candidate_review_repository(session: Session = Depends(get_db_session)) -> CandidateReviewRepository:
+    return CandidateReviewRepository(session)
+
+
+def get_proposed_field_change_repository(
+    session: Session = Depends(get_db_session),
+) -> ProposedFieldChangeRepository:
+    return ProposedFieldChangeRepository(session)
+
+
+def get_resume_fetch_service(
+    candidate_repository: CandidateRepository = Depends(get_candidate_repository),
+    zoho_recruit_client: ZohoRecruitClient = Depends(get_zoho_recruit_client),
+) -> ResumeFetchService:
+    return ResumeFetchService(
+        candidate_repository=candidate_repository,
+        zoho_recruit_client=zoho_recruit_client,
+    )
+
+
+def get_resume_enrichment_service(
+    review_batch_repository: ReviewBatchRepository = Depends(get_review_batch_repository),
+    candidate_review_repository: CandidateReviewRepository = Depends(get_candidate_review_repository),
+    proposed_field_change_repository: ProposedFieldChangeRepository = Depends(
+        get_proposed_field_change_repository
+    ),
+    candidate_repository: CandidateRepository = Depends(get_candidate_repository),
+    zoho_recruit_client: ZohoRecruitClient = Depends(get_zoho_recruit_client),
+    resume_fetch_service: ResumeFetchService = Depends(get_resume_fetch_service),
+) -> ResumeEnrichmentService:
+    return ResumeEnrichmentService(
+        review_batch_repository=review_batch_repository,
+        candidate_review_repository=candidate_review_repository,
+        proposed_field_change_repository=proposed_field_change_repository,
+        candidate_repository=candidate_repository,
+        zoho_recruit_client=zoho_recruit_client,
+        resume_fetch_service=resume_fetch_service,
     )
 
 

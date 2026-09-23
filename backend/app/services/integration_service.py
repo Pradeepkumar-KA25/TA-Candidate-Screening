@@ -48,6 +48,8 @@ class IntegrationService:
 
     def get_zoho_status(self) -> ZohoIntegrationStatusResponse:
         record = self.repository.get_or_create(self.provider_name)
+        # Refresh from database to get latest values (in case they were updated outside the session)
+        self.repository.session.refresh(record)
         now = datetime.now(UTC)
 
         record.last_checked_at = now

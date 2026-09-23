@@ -37,6 +37,12 @@ class Settings(BaseSettings):
     anthropic_api_key: str | None = None
     gemini_api_key: str | None = None
 
+    # Phase 1: Resume Enrichment Configuration
+    review_batch_size: int = 20  # Number of candidates per review batch
+    resume_extraction_timeout_seconds: float = 120.0  # Timeout for Ollama extraction
+    resume_extraction_retry_attempts: int = 2  # Retry extraction if it fails
+    zoho_write_enabled: bool = False  # SAFETY: Disable Zoho write operations during development
+
     model_config = SettingsConfigDict(
         env_file=str(ENV_FILE_PATH),
         env_file_encoding="utf-8",

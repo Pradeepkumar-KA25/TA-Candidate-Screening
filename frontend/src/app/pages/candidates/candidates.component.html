@@ -10,7 +10,7 @@
         <input
           type="text"
           [formControl]="searchControl"
-          placeholder="Search by candidate name, skill, company..."
+          placeholder="Search by name, email, Zoho ID, skill, company..."
           aria-label="Search candidates"
         />
         <button type="button" class="btn btn-secondary search-button" (click)="onSearchSubmit()" aria-label="Search" title="Search">
@@ -259,5 +259,25 @@
     <div class="action-row" *ngIf="!loading && candidates.length > 0">
       <a routerLink="/ranking" class="btn btn-primary">View Ranking</a>
       <a routerLink="/duplicates" class="btn btn-secondary">Review Duplicates</a>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" *ngIf="showDeleteConfirmModal" (click)="cancelDelete()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Confirm Delete</h3>
+          <button type="button" class="modal-close" (click)="cancelDelete()" aria-label="Close">×</button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete {{ deleteConfirmCount }} candidate<span *ngIf="deleteConfirmCount !== 1">s</span>?</p>
+          <p class="warning-text">This action cannot be undone. All related data (reviews, shortlist entries, etc.) will also be deleted.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="cancelDelete()" [disabled]="deletingCandidates">Cancel</button>
+          <button type="button" class="btn btn-danger" (click)="confirmDelete()" [disabled]="deletingCandidates">
+            {{ deletingCandidates ? 'Deleting...' : 'Delete' }}
+          </button>
+        </div>
+      </div>
     </div>
   </section>

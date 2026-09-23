@@ -31,6 +31,7 @@ async def auto_sync_background_worker():
     from app.services.sync_service import SyncService
     from app.services.duplicate_detection_service import DuplicateDetectionService
     from app.services.normalization_service import NormalizationService
+    from app.services.resume_fetch_service import ResumeFetchService
     from app.integrations.zoho_oauth import ZohoOAuthClient
     from app.integrations.zoho_recruit import ZohoRecruitClient
     
@@ -61,6 +62,10 @@ async def auto_sync_background_worker():
                     candidate_repo, duplicate_review_repo
                 )
                 normalization_service = NormalizationService(normalization_rule_repo)
+                resume_fetch_service = ResumeFetchService(
+                    candidate_repository=candidate_repo,
+                    zoho_recruit_client=zoho_recruit_client,
+                )
                 
                 sync_service = SyncService(
                     sync_log_repository=sync_log_repo,
@@ -71,6 +76,7 @@ async def auto_sync_background_worker():
                     normalization_service=normalization_service,
                     zoho_oauth_client=zoho_oauth_client,
                     zoho_recruit_client=zoho_recruit_client,
+                    resume_fetch_service=resume_fetch_service,
                 )
                 
                 # Try to run auto-sync

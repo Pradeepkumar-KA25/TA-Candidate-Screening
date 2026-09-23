@@ -62,6 +62,8 @@ export class CandidatesComponent implements OnInit {
   movingToShortlist = false;
   deletingCandidates = false;
   selectingAllCandidates = false;
+  showDeleteConfirmModal = false;
+  deleteConfirmCount = 0;
   private advancedCriteria: {
     degree?: string;
     certification?: string;
@@ -416,12 +418,17 @@ export class CandidatesComponent implements OnInit {
       return;
     }
 
-    const count = this.selectedCandidateIds.size;
-    const confirmed = confirm(
-      `Are you sure you want to delete ${count} candidate${count !== 1 ? 's' : ''}? This action cannot be undone.`
-    );
-    if (!confirmed) return;
+    // Show confirmation modal instead of browser alert
+    this.deleteConfirmCount = this.selectedCandidateIds.size;
+    this.showDeleteConfirmModal = true;
+  }
 
+  async confirmDelete(): Promise<void> {
+    if (this.selectedCandidateIds.size === 0 || this.deletingCandidates) {
+      return;
+    }
+
+    this.showDeleteConfirmModal = false;
     this.deletingCandidates = true;
     this.errorMessage = null;
 
@@ -438,6 +445,11 @@ export class CandidatesComponent implements OnInit {
     } finally {
       this.deletingCandidates = false;
     }
+  }
+
+  cancelDelete(): void {
+    this.showDeleteConfirmModal = false;
+    this.deleteConfirmCount = 0;
   }
 
   applyFilters(): void {

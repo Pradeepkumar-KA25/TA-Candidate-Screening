@@ -213,44 +213,24 @@ class CandidateService:
         
         for candidate_id in candidate_ids:
             try:
-                logger.debug(f"Attempting to find candidate {candidate_id}")
-                candidate = self.repository.get_by_id(candidate_id)
+                # Delete resume folder if service available (do this before database delete)
+                if self.resume_fetch_service:
+                    try:
+                        self.resume_fetch_service.delete_candidate_resumes(str(candidate_id))
+                        logger.debug(f"Deleted resume folder for candidate {candidate_id}")
+                    except Exception as e:
+                        logger.warning(f"Failed to delete resume for candidate {candidate_id}: {str(e)}")
                 
-                if candidate is not None:
-                    logger.debug(f"Found candidate {candidate_id} (name={candidate.full_name})")
-                    
-                    # Delete resume folder if service available
-                    if self.resume_fetch_service:
-                        try:
-                            self.resume_fetch_service.delete_candidate_resumes(str(candidate_id))
-                            logger.debug(f"Deleted resume folder for candidate {candidate_id}")
-                        except Exception as e:
-                            logger.warning(f"Failed to delete resume for candidate {candidate_id}: {str(e)}")
-                    
-                    # Delete dependent records first to avoid foreign key constraint violations
-                    if self.shortlist_repository:
-                        try:
-                            removed_count = self.shortlist_repository.remove_candidate_from_all_shortlists(candidate_id)
-                            logger.debug(f"Removed candidate {candidate_id} from {removed_count} shortlist(s)")
-                        except Exception as e:
-                            logger.warning(f"Failed to remove shortlist references for {candidate_id}: {str(e)}")
-                    
-                    if self.duplicate_review_repository:
-                        try:
-                            review_count = self.duplicate_review_repository.remove_candidate_reviews(candidate_id)
-                            logger.debug(f"Removed {review_count} duplicate review(s) involving {candidate_id}")
-                        except Exception as e:
-                            logger.warning(f"Failed to remove duplicate reviews for {candidate_id}: {str(e)}")
-                    
-                    # Now delete the candidate
-                    logger.debug(f"Deleting candidate {candidate_id}...")
-                    self.repository.delete(candidate_id)
-                    deleted_count += 1
-                    logger.info(f"Successfully deleted candidate {candidate_id}")
-                else:
-                    logger.warning(f"Candidate {candidate_id} not found in database")
+                # Delete the candidate - CASCADE DELETE will handle all dependent records
+                # (candidate_reviews, duplicate_reviews, shortlist_candidates, etc.)
+                logger.debug(f"Deleting candidate {candidate_id}...")
+                self.repository.delete(candidate_id)
+                deleted_count += 1
+                logger.info(f"Successfully deleted candidate {candidate_id}")
+                
             except Exception as e:
                 logger.error(f"Error deleting candidate {candidate_id}: {str(e)}", exc_info=True)
+                # Continue with next candidate even if one fails
         
         logger.info(f"Batch delete completed. Successfully deleted {deleted_count} out of {len(candidate_ids)} candidates")
         return deleted_count

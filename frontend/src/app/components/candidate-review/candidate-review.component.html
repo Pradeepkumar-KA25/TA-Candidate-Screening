@@ -1,0 +1,285 @@
+<div class="candidate-review-container">
+  <!-- Back Button -->
+  <button class="btn btn-secondary btn-back" (click)="goBack()">
+    ← Back to Batch
+  </button>
+
+  <!-- Error/Success Messages -->
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <div *ngIf="success" class="alert alert-success">
+    {{ success }}
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading && !candidateReview" class="loading-container">
+    <p>Loading candidate review...</p>
+  </div>
+
+  <!-- Candidate Review Content -->
+  <div *ngIf="candidateReview" class="review-content">
+    <!-- Header -->
+    <div class="review-header">
+      <div class="candidate-info">
+        <h1>{{ candidateReview.candidate_name }}</h1>
+        <span [class]="'badge ' + 'approval-' + candidateReview.approval_status.toLowerCase()">
+          {{ candidateReview.approval_status }}
+        </span>
+      </div>
+      <div class="header-stats">
+        <div class="stat">
+          <span class="stat-label">Total Fields:</span>
+          <span class="stat-value">{{ candidateReview.proposed_changes.length }}</span>
+        </div>
+        <div class="stat pending">
+          <span class="stat-label">Pending:</span>
+          <span class="stat-value">{{ getPendingChanges().length }}</span>
+        </div>
+        <div class="stat approved">
+          <span class="stat-label">Approved:</span>
+          <span class="stat-value">{{ getApprovedChanges().length }}</span>
+        </div>
+        <div class="stat rejected">
+          <span class="stat-label">Rejected:</span>
+          <span class="stat-value">{{ getRejectedChanges().length }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- No Changes State -->
+    <div *ngIf="candidateReview.proposed_changes.length === 0" class="empty-state">
+      <p>No proposed field changes for this candidate.</p>
+    </div>
+
+    <!-- Proposed Changes -->
+    <div *ngIf="candidateReview.proposed_changes.length > 0" class="changes-container">
+      <!-- Pending Changes Section -->
+      <div *ngIf="getPendingChanges().length > 0" class="changes-section pending-section">
+        <div class="section-header">
+          <h2>Pending Changes</h2>
+          <div class="section-controls">
+            <button
+              class="btn btn-sm btn-secondary"
+              (click)="selectAllPending()"
+              [disabled]="loading || submitting"
+            >
+              Select All
+            </button>
+            <button
+              class="btn btn-sm btn-secondary"
+              (click)="deselectAll()"
+              [disabled]="loading || submitting"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+
+        <div class="fields-grid">
+          <div
+            *ngFor="let change of getPendingChanges()"
+            class="field-card"
+            [class.selected]="isFieldSelected(change.id)"
+          >
+            <!-- Checkbox -->
+            <div class="field-checkbox">
+              <input
+                type="checkbox"
+                [checked]="isFieldSelected(change.id)"
+                (change)="toggleFieldSelection(change.id)"
+                [id]="'field-' + change.id"
+                [disabled]="submitting"
+              />
+              <label [for]="'field-' + change.id"></label>
+            </div>
+
+            <!-- Field Info -->
+            <div class="field-info">
+              <div class="field-name">{{ change.zoho_field_display_name }}</div>
+              <div class="field-api-name">{{ change.zoho_field_api_name }}</div>
+            </div>
+
+            <!-- Value Comparison -->
+            <div class="value-comparison">
+              <div class="value-row">
+                <div class="value-label">Current Zoho Value:</div>
+                <div class="value-content">
+                  <span class="value existing-value">
+                    {{ formatFieldValue(change.existing_zoho_value) }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="arrow">→</div>
+
+              <div class="value-row">
+                <div class="value-label">Proposed Value:</div>
+                <div class="value-content">
+                  <span class="value proposed-value">
+                    {{ formatFieldValue(change.proposed_value) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Status Badge -->
+            <div class="field-status">
+              <span [class]="'badge ' + getChangeStatusClass(change.change_status)">
+                {{ change.change_status }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bulk Action Buttons -->
+        <div class="action-buttons">
+          <button
+            class="btn btn-success"
+            (click)="showBulkAction('approve')"
+            [disabled]="selectedFieldIds.size === 0 || submitting || showBulkActionForm"
+          >
+            Approve Selected ({{ selectedFieldIds.size }})
+          </button>
+          <button
+            class="btn btn-danger"
+            (click)="showBulkAction('reject')"
+            [disabled]="selectedFieldIds.size === 0 || submitting || showBulkActionForm"
+          >
+            Reject Selected ({{ selectedFieldIds.size }})
+          </button>
+        </div>
+
+        <!-- Bulk Action Form -->
+        <div *ngIf="showBulkActionForm" class="bulk-action-form">
+          <div class="form-group">
+            <label for="bulkNotes">{{ selectedAction === 'approve' ? 'Approval' : 'Rejection' }} Notes (Optional):</label>
+            <textarea
+              id="bulkNotes"
+              class="form-control"
+              [(ngModel)]="bulkActionNotes"
+              placeholder="Enter notes..."
+              maxlength="512"
+              [disabled]="submitting"
+            ></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button
+              class="btn btn-primary"
+              (click)="submitBulkAction()"
+              [disabled]="submitting"
+            >
+              {{ submitting ? 'Submitting...' : 'Confirm ' + (selectedAction === 'approve' ? 'Approval' : 'Rejection') }}
+            </button>
+            <button
+              class="btn btn-secondary"
+              (click)="cancelBulkAction()"
+              [disabled]="submitting"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+          <div class="quick-action-group">
+            <label>Quick Actions:</label>
+            <div class="action-row">
+              <button
+                class="btn btn-sm btn-success"
+                (click)="approveAll()"
+                [disabled]="getPendingChanges().length === 0 || submitting || showBulkActionForm"
+                title="Approve all pending changes"
+              >
+                Approve All
+              </button>
+              <button
+                class="btn btn-sm btn-danger"
+                (click)="rejectAll()"
+                [disabled]="getPendingChanges().length === 0 || submitting || showBulkActionForm"
+                title="Reject all pending changes"
+              >
+                Reject All
+              </button>
+            </div>
+          </div>
+
+          <div class="quick-action-group">
+            <label for="approvalNotes">Notes (applies to quick actions):</label>
+            <textarea
+              id="approvalNotes"
+              class="form-control form-control-sm"
+              [(ngModel)]="approvalNotes"
+              placeholder="Optional notes..."
+              maxlength="512"
+              [disabled]="submitting || showBulkActionForm"
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Approved Changes Section -->
+      <div *ngIf="getApprovedChanges().length > 0" class="changes-section approved-section">
+        <div class="section-header">
+          <h2>Approved Changes</h2>
+          <span class="section-badge">{{ getApprovedChanges().length }}</span>
+        </div>
+
+        <div class="fields-grid read-only">
+          <div *ngFor="let change of getApprovedChanges()" class="field-card">
+            <div class="field-info">
+              <div class="field-name">{{ change.zoho_field_display_name }}</div>
+            </div>
+
+            <div class="value-comparison">
+              <div class="value-row">
+                <span class="value empty-value">(empty)</span>
+              </div>
+              <div class="arrow">→</div>
+              <div class="value-row">
+                <span class="value approved-value">{{ change.proposed_value }}</span>
+              </div>
+            </div>
+
+            <div class="field-status">
+              <span class="badge badge-approved">APPROVED</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rejected Changes Section -->
+      <div *ngIf="getRejectedChanges().length > 0" class="changes-section rejected-section">
+        <div class="section-header">
+          <h2>Rejected Changes</h2>
+          <span class="section-badge">{{ getRejectedChanges().length }}</span>
+        </div>
+
+        <div class="fields-grid read-only">
+          <div *ngFor="let change of getRejectedChanges()" class="field-card">
+            <div class="field-info">
+              <div class="field-name">{{ change.zoho_field_display_name }}</div>
+            </div>
+
+            <div class="value-comparison">
+              <div class="value-row">
+                <span class="value empty-value">(empty)</span>
+              </div>
+              <div class="arrow crossed">→</div>
+              <div class="value-row">
+                <span class="value rejected-value">{{ change.proposed_value }}</span>
+              </div>
+            </div>
+
+            <div class="field-status">
+              <span class="badge badge-rejected">REJECTED</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -20,7 +20,7 @@ class ZohoIntegrationStatusResponse(BaseModel):
 
 class AutoSyncSettingsRequest(BaseModel):
     auto_sync_enabled: bool
-    auto_sync_interval_minutes: int = 5
+    auto_sync_interval_minutes: int
 
 
 class ZohoFieldMetadataResponse(BaseModel):

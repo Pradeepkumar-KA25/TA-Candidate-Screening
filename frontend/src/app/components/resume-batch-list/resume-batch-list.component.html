@@ -1,0 +1,107 @@
+<div class="batch-list-container">
+  <div class="batch-list-header">
+    <h1>Resume Enrichment Batches</h1>
+    <button
+      class="btn btn-primary"
+      (click)="createBatch()"
+      [disabled]="creating || loading"
+      title="Create a new batch of candidates for review"
+    >
+      <span *ngIf="!creating">Create New Batch</span>
+      <span *ngIf="creating">Creating...</span>
+    </button>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading && batches.length === 0" class="loading-container">
+    <p>Loading batches...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && batches.length === 0" class="empty-state">
+    <p>No review batches found.</p>
+    <button class="btn btn-primary" (click)="createBatch()" [disabled]="creating">
+      Create Your First Batch
+    </button>
+  </div>
+
+  <!-- Batch Table -->
+  <div *ngIf="batches.length > 0" class="table-responsive">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Batch Number</th>
+          <th>Status</th>
+          <th>Total</th>
+          <th>Processed</th>
+          <th>Pending</th>
+          <th>Approved</th>
+          <th>Rejected</th>
+          <th>Progress</th>
+          <th>Created</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let batch of batches" [class.row-loading]="batch.status === 'PROCESSING'">
+          <td>
+            <strong>{{ batch.batch_number }}</strong>
+          </td>
+          <td>
+            <span [class]="'badge ' + getStatusClass(batch.status)">
+              {{ batch.status }}
+            </span>
+          </td>
+          <td>{{ batch.total_candidates }}</td>
+          <td>{{ batch.processed_candidates }}</td>
+          <td>{{ batch.pending_candidates }}</td>
+          <td class="text-success">{{ batch.approved_candidates }}</td>
+          <td class="text-danger">{{ batch.rejected_candidates }}</td>
+          <td>
+            <div class="progress-bar-container">
+              <div class="progress-bar" [style.width.%]="getProgressPercentage(batch)"></div>
+              <span class="progress-text">{{ getProgressPercentage(batch) }}%</span>
+            </div>
+          </td>
+          <td>{{ batch.created_at | date: 'short' }}</td>
+          <td>
+            <button
+              class="btn btn-sm btn-info"
+              (click)="viewBatch(batch.id)"
+              [disabled]="loading"
+              title="View batch details"
+            >
+              View
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div *ngIf="batches.length > 0" class="pagination-container">
+    <button
+      class="btn btn-secondary"
+      (click)="previousPage()"
+      [disabled]="isPreviousDisabled()"
+    >
+      Previous
+    </button>
+    <span class="pagination-info">
+      Page {{ page }} of {{ Math.ceil(total / pageSize) }} ({{ total }} total batches)
+    </span>
+    <button
+      class="btn btn-secondary"
+      (click)="nextPage()"
+      [disabled]="isNextDisabled()"
+    >
+      Next
+    </button>
+  </div>
+</div>
