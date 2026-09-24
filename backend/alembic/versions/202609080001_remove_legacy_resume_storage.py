@@ -13,7 +13,7 @@ from alembic import op
 
 
 revision = "202609080001"
-down_revision = ("b7ba7c24ba0e", "202609040001", "kanini_001")
+down_revision = ("b7ba7c24ba0e", "202609040001")
 branch_labels = None
 depends_on = None
 
@@ -28,11 +28,11 @@ def upgrade() -> None:
     op.drop_table("company_sectors")
 
     # Generated files and database-backed drafts are no longer persisted.
-    op.drop_table("kanini_generated_resumes")
-    op.drop_table("kanini_template_drafts")
+    # op.drop_table("kanini_generated_resumes")
+    # op.drop_table("kanini_template_drafts")
 
     # Uploaded source documents are parsed transiently; only parsed data remains.
-    op.drop_column("kanini_resumes", "file_path")
+    # op.drop_column("kanini_resumes", "file_path")
 
 
 def downgrade() -> None:

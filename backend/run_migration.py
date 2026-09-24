@@ -16,7 +16,7 @@ def run_migration():
         [sys.executable, "-m", "alembic", "upgrade", "head"],
         capture_output=True,
         text=True,
-        cwd="d:\\Git\\TA Candidate Screening\\backend"
+        cwd=os.path.dirname(os.path.abspath(__file__))
     )
     
     print("STDOUT:")
@@ -37,6 +37,6 @@ def run_migration():
 
 if __name__ == "__main__":
     import os
-    os.chdir("d:\\Git\\TA Candidate Screening\\backend")
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
     success = run_migration()
     sys.exit(0 if success else 1)

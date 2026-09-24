@@ -1,0 +1,155 @@
+version: '3.9'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: ta-screening-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-talent_acquisition}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      # Named volume for persistent data
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ta-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ta-screening-backend
+    environment:
+      # App Configuration
+      APP_NAME: ${APP_NAME:-Talent Acquisition API}
+      APP_ENV: ${APP_ENV:-development}
+      DEBUG: ${DEBUG:-false}
+      API_V1_PREFIX: ${API_V1_PREFIX:-/api/v1}
+      
+      # Database Configuration
+      DATABASE_URL: postgresql+psycopg://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-talent_acquisition}
+      
+      # CORS Configuration
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200}
+      
+      # JWT Configuration
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-production-please-use-a-long-secret}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      REMEMBER_ME_EXPIRE_DAYS: ${REMEMBER_ME_EXPIRE_DAYS:-7}
+      
+      # Integration Configuration
+      INTEGRATION_ENCRYPTION_KEY: ${INTEGRATION_ENCRYPTION_KEY:-}
+      
+      # Zoho Configuration
+      ZOHO_ACCOUNTS_BASE_URL: ${ZOHO_ACCOUNTS_BASE_URL:-https://accounts.zoho.com}
+      ZOHO_RECRUIT_BASE_URL: ${ZOHO_RECRUIT_BASE_URL:-https://recruit.zoho.com/recruit/v2}
+      ZOHO_CLIENT_ID: ${ZOHO_CLIENT_ID:-}
+      ZOHO_CLIENT_SECRET: ${ZOHO_CLIENT_SECRET:-}
+      ZOHO_CONNECTION_TIMEOUT_SECONDS: ${ZOHO_CONNECTION_TIMEOUT_SECONDS:-30.0}
+      ZOHO_SYNC_MAX_RECORDS: ${ZOHO_SYNC_MAX_RECORDS:-200}
+      ZOHO_RESUME_STORAGE_PATH: ${ZOHO_RESUME_STORAGE_PATH:-uploads/resumes}
+      
+      # AI Provider Configuration
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_HOST: ${OLLAMA_HOST:-ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1}
+      AI_PROVIDER_PRIORITY: ${AI_PROVIDER_PRIORITY:-ollama}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
+      AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY:-}
+      AZURE_OPENAI_AD_TOKEN: ${AZURE_OPENAI_AD_TOKEN:-}
+      AZURE_OPENAI_API_VERSION: ${AZURE_OPENAI_API_VERSION:-2024-10-21}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      
+      # Phase 1 Configuration
+      REVIEW_BATCH_SIZE: ${REVIEW_BATCH_SIZE:-20}
+      RESUME_EXTRACTION_TIMEOUT_SECONDS: ${RESUME_EXTRACTION_TIMEOUT_SECONDS:-120.0}
+      RESUME_EXTRACTION_RETRY_ATTEMPTS: ${RESUME_EXTRACTION_RETRY_ATTEMPTS:-2}
+      ZOHO_WRITE_ENABLED: ${ZOHO_WRITE_ENABLED:-false}
+    
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    
+    volumes:
+      # Mount uploads directory for resume storage
+      - backend_uploads:/app/uploads
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+    
+    networks:
+      - ta-network
+    
+    restart: unless-stopped
+
+  # Angular Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ta-screening-frontend
+    ports:
+      - "${FRONTEND_PORT:-4200}:4200"
+    
+    depends_on:
+      backend:
+        condition: service_healthy
+    
+    networks:
+      - ta-network
+    
+    restart: unless-stopped
+
+  # Ollama LLM Service (for resume enrichment and AI features)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ta-screening-ollama
+    environment:
+      # Ollama configuration for resource management
+      OLLAMA_NUM_PARALLEL: "2"
+      OLLAMA_NUM_THREAD: "4"
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      # Persistent volume for model files
+      - ollama_models:/root/.ollama
+    networks:
+      - ta-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  # Named volume for PostgreSQL data persistence
+  postgres_data:
+    driver: local
+  
+  # Named volume for backend uploads
+  backend_uploads:
+    driver: local
+  
+  # Named volume for Ollama model files
+  ollama_models:
+    driver: local
+
+networks:
+  # Custom bridge network for service communication
+  ta-network:
+    driver: bridge
