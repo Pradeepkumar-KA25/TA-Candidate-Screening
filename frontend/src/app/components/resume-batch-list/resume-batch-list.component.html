@@ -3,13 +3,41 @@
     <h1>Resume Enrichment Batches</h1>
     <button
       class="btn btn-primary"
-      (click)="createBatch()"
+      (click)="openBatchSizeDialog()"
       [disabled]="creating || loading"
       title="Create a new batch of candidates for review"
     >
       <span *ngIf="!creating">Create New Batch</span>
       <span *ngIf="creating">Creating...</span>
     </button>
+  </div>
+
+  <div *ngIf="showBatchSizeDialog" class="batch-size-dialog-backdrop" (click)="cancelBatchCreation()">
+    <section class="batch-size-dialog" role="dialog" aria-modal="true" aria-labelledby="batch-size-title" (click)="$event.stopPropagation()">
+      <h2 id="batch-size-title">Create review batch</h2>
+      <label for="batch-size">Candidates per batch</label>
+      <input
+        id="batch-size"
+        type="number"
+        min="1"
+        max="1000"
+        step="1"
+        [(ngModel)]="batchSize"
+        aria-describedby="batch-size-help"
+      />
+      <p id="batch-size-help">Choose between 1 and 1000 candidates. The default is 20.</p>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary" (click)="cancelBatchCreation()">Cancel</button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="createBatch()"
+          [disabled]="batchSize < 1 || batchSize > 1000"
+        >
+          Create Batch
+        </button>
+      </div>
+    </section>
   </div>
 
   <!-- Error Message -->
@@ -25,7 +53,7 @@
   <!-- Empty State -->
   <div *ngIf="!loading && batches.length === 0" class="empty-state">
     <p>No review batches found.</p>
-    <button class="btn btn-primary" (click)="createBatch()" [disabled]="creating">
+    <button class="btn btn-primary" (click)="openBatchSizeDialog()" [disabled]="creating">
       Create Your First Batch
     </button>
   </div>

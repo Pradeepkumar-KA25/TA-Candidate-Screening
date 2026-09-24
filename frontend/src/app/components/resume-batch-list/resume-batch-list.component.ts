@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -10,7 +11,7 @@ import { ResumeEnrichmentService } from '../../services/resume-enrichment.servic
 @Component({
   selector: 'app-resume-batch-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './resume-batch-list.component.html',
   styleUrls: ['./resume-batch-list.component.scss'],
 })
@@ -18,6 +19,8 @@ export class ResumeBatchListComponent implements OnInit, OnDestroy {
   batches: ReviewBatch[] = [];
   loading = false;
   creating = false;
+  showBatchSizeDialog = false;
+  batchSize = 20;
   error: string | null = null;
   page = 1;
   pageSize = 10;
@@ -69,14 +72,28 @@ export class ResumeBatchListComponent implements OnInit, OnDestroy {
   /**
    * Create a new review batch.
    */
+  openBatchSizeDialog(): void {
+    if (this.creating || this.loading) return;
+    this.batchSize = 20;
+    this.showBatchSizeDialog = true;
+    this.error = null;
+  }
+
+  cancelBatchCreation(): void {
+    if (!this.creating) {
+      this.showBatchSizeDialog = false;
+    }
+  }
+
   createBatch(): void {
-    if (this.creating) return;
+    if (this.creating || this.batchSize < 1 || this.batchSize > 1000) return;
 
     this.creating = true;
+    this.showBatchSizeDialog = false;
     this.error = null;
 
     this.resumeEnrichmentService
-      .createBatch()
+      .createBatch(this.batchSize)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (batch) => {
