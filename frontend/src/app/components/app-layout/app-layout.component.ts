@@ -6,7 +6,7 @@ import { AppShellComponent } from '../app-shell/app-shell.component';
 import { AuthService } from '../../services/auth.service';
 import { IntegrationService } from '../../services/integration.service';
 
-type ActiveNavigation = 'dashboard' | 'candidates' | 'filters' | 'ranking' | 'shortlists' | 'duplicates' | 'settings' | 'resume-generator' | 'my-resumes' | 'create-template' | 'resume-enrichment';
+type ActiveNavigation = 'dashboard' | 'candidates' | 'filters' | 'ranking' | 'shortlists' | 'duplicates' | 'settings' | 'resume-generator' | 'my-resumes' | 'create-template' | 'resume-enrichment' | 'audit-logs' | 'users';
 
 @Component({
   selector: 'app-layout',
@@ -54,6 +54,10 @@ export class AppLayoutComponent {
       this.setRouteContext('my-resumes', 'My Resumes');
     } else if (cleanUrl.startsWith('/resume-enrichment')) {
       this.setRouteContext('resume-enrichment', 'Resume Enrichment');
+    } else if (cleanUrl.startsWith('/audit-logs')) {
+      this.setRouteContext('audit-logs', 'Audit Log');
+    } else if (cleanUrl.startsWith('/users')) {
+      this.setRouteContext('users', 'User Management');
     } else if (cleanUrl.startsWith('/create-template')) {
       this.setRouteContext('create-template', 'Create Template');
     } else if (cleanUrl.startsWith('/sync-complete')) {

@@ -11,8 +11,8 @@ import { environment } from '../../environments/environment';
 export class ApiConfigService {
   /**
    * Get the API base URL for the current environment
-   * Development: http://localhost:8000/api/v1
-   * Production: /api/v1 (relative path, resolved by proxy/deployment)
+    * The relative path is resolved by the Angular development proxy locally
+    * and by Nginx in deployed containers.
    */
   getApiBaseUrl(): string {
     return environment.apiBaseUrl;

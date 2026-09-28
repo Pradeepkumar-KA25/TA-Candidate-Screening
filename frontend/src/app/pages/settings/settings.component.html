@@ -48,5 +48,10 @@
           <a routerLink="/sync-candidates" class="btn btn-secondary">Open Sync Candidates</a>
         </div>
       </article>
+
+      <article class="card settings-card settings-card-action" *ngIf="isAdmin" id="user-management">
+        <div class="settings-icon" aria-hidden="true"><svg lucideSlidersHorizontal></svg></div>
+        <div><h2>User Management</h2><p>Manage recruiter accounts, roles, and access status.</p><a routerLink="/users" class="btn btn-secondary">Open User Management</a></div>
+      </article>
     </div>
   </section>

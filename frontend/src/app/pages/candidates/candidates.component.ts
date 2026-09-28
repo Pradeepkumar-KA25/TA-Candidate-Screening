@@ -17,6 +17,7 @@ import { JobDescriptionService } from '../../services/job-description.service';
 import { SavedFilterService } from '../../services/saved-filter.service';
 import { ShortlistService } from '../../services/shortlist.service';
 import { sanitizeCandidateName, sanitizeDisplayText, summarizeSkills } from '../../utils/display-format';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-candidates',
@@ -84,7 +85,8 @@ export class CandidatesComponent implements OnInit {
     private readonly savedFilterService: SavedFilterService,
     private readonly shortlistService: ShortlistService,
     private readonly route: ActivatedRoute,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly notificationService: NotificationService
   ) {
     this.integrationService
       .pollZohoStatus()
@@ -366,10 +368,12 @@ export class CandidatesComponent implements OnInit {
             this.selectedCandidateIds.clear();
             response.items.forEach((candidate) => this.selectedCandidateIds.add(candidate.id));
             this.selectingAllCandidates = false;
+            this.notificationService.success(`${response.items.length} candidates selected.`, 'Selection updated');
           },
           error: () => {
             this.selectingAllCandidates = false;
             this.errorMessage = 'Failed to select all candidates';
+            this.notificationService.error(this.errorMessage, 'Selection failed');
           },
         });
     }
@@ -405,9 +409,11 @@ export class CandidatesComponent implements OnInit {
       );
       const jdId = this.selectedShortlistJdId;
       this.selectedCandidateIds.clear();
+      this.notificationService.success('Selected candidates were added to the shortlist.', 'Shortlist updated');
       this.router.navigate(['/shortlists'], { queryParams: { jd_id: jdId } });
     } catch {
       this.errorMessage = 'Unable to move selected candidates to shortlist. Please try again.';
+      this.notificationService.error(this.errorMessage, 'Shortlist update failed');
     } finally {
       this.movingToShortlist = false;
     }
@@ -439,9 +445,11 @@ export class CandidatesComponent implements OnInit {
       );
 
       this.selectedCandidateIds.clear();
+      this.notificationService.success(`${deleteResponse.deleted_count ?? 0} candidates deleted.`, 'Candidates deleted');
       this.loadCandidates(this.page, this.searchTerm);
     } catch {
       this.errorMessage = 'Unable to delete selected candidates. Please try again.';
+      this.notificationService.error(this.errorMessage, 'Candidate deletion failed');
     } finally {
       this.deletingCandidates = false;
     }

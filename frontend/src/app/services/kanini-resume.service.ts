@@ -8,6 +8,10 @@ export interface KaniniResume {
   id: string;
   filename: string;
   parsed_data: Record<string, any>;
+  extraction_status: 'pending' | 'processing' | 'completed' | 'failed';
+  extraction_progress: number;
+  extraction_error?: string | null;
+  extraction_model?: string | null;
   created_at: string;
 }
 
@@ -72,6 +76,12 @@ export class KaniniResumeService {
     return this.httpClient.get<KaniniResume>(
       `${this.apiBaseUrl}/kanini/resumes/${resumeId}`
     );
+  }
+
+  retryExtraction(resumeId: string, llmModel: string = 'auto'): Observable<any> {
+    const formData = new FormData();
+    formData.append('llm_model', llmModel);
+    return this.httpClient.post(`${this.apiBaseUrl}/kanini/resumes/${resumeId}/extract`, formData);
   }
 
   updateResume(resumeId: string, parsedData: Record<string, any>): Observable<any> {

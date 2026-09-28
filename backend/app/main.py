@@ -117,7 +117,7 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Application startup")
     _auto_sync_task = asyncio.create_task(auto_sync_background_worker())
-    
+
     yield
     
     # Shutdown
@@ -143,7 +143,7 @@ def create_app() -> FastAPI:
     # Custom middleware to ensure CORS headers are ALWAYS applied
     @app.middleware("http")
     async def add_cors_headers(request: Request, call_next):
-        cors_origins = [origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()]
+        cors_origins = [origin.strip() for origin in settings.frontend_cors_origin.split(",") if origin.strip()]
         
         # Handle preflight requests
         if request.method == "OPTIONS":
@@ -181,7 +181,7 @@ def create_app() -> FastAPI:
     app.include_router(api_router, prefix=settings.api_v1_prefix)
 
     # Add CORS middleware LAST (it will execute FIRST due to middleware stack)
-    cors_origins = [origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()]
+    cors_origins = [origin.strip() for origin in settings.frontend_cors_origin.split(",") if origin.strip()]
     if cors_origins:
         app.add_middleware(
             CORSMiddleware,

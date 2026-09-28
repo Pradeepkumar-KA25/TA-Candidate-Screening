@@ -41,6 +41,7 @@ from app.services.resume_enrichment_service import ResumeEnrichmentService
 from app.services.resume_fetch_service import ResumeFetchService
 from app.services.saved_filter_service import SavedFilterService
 from app.services.sync_service import SyncService
+from app.storage import StorageBackend, get_storage_backend
 from app.services.auth_service import (
     AccessDeniedError,
     ExpiredTokenError,
@@ -132,10 +133,12 @@ def get_shortlist_repository(session: Session = Depends(get_db_session)) -> Shor
 def get_resume_fetch_service(
     candidate_repository: CandidateRepository = Depends(get_candidate_repository),
     zoho_recruit_client: ZohoRecruitClient = Depends(get_zoho_recruit_client),
+    storage: StorageBackend = Depends(get_storage_backend),
 ) -> ResumeFetchService:
     return ResumeFetchService(
         candidate_repository=candidate_repository,
         zoho_recruit_client=zoho_recruit_client,
+        storage=storage,
     )
 
 def get_candidate_service(
@@ -199,10 +202,12 @@ def get_dashboard_service(
 def get_resume_fetch_service(
     candidate_repository: CandidateRepository = Depends(get_candidate_repository),
     zoho_recruit_client: ZohoRecruitClient = Depends(get_zoho_recruit_client),
+    storage: StorageBackend = Depends(get_storage_backend),
 ) -> ResumeFetchService:
     return ResumeFetchService(
         candidate_repository=candidate_repository,
         zoho_recruit_client=zoho_recruit_client,
+        storage=storage,
     )
 
 
@@ -275,10 +280,12 @@ def get_proposed_field_change_repository(
 def get_resume_fetch_service(
     candidate_repository: CandidateRepository = Depends(get_candidate_repository),
     zoho_recruit_client: ZohoRecruitClient = Depends(get_zoho_recruit_client),
+    storage: StorageBackend = Depends(get_storage_backend),
 ) -> ResumeFetchService:
     return ResumeFetchService(
         candidate_repository=candidate_repository,
         zoho_recruit_client=zoho_recruit_client,
+        storage=storage,
     )
 
 
@@ -291,6 +298,7 @@ def get_resume_enrichment_service(
     candidate_repository: CandidateRepository = Depends(get_candidate_repository),
     zoho_recruit_client: ZohoRecruitClient = Depends(get_zoho_recruit_client),
     resume_fetch_service: ResumeFetchService = Depends(get_resume_fetch_service),
+    activity_log_repository: ActivityLogRepository = Depends(get_activity_log_repository),
 ) -> ResumeEnrichmentService:
     return ResumeEnrichmentService(
         review_batch_repository=review_batch_repository,
@@ -299,6 +307,7 @@ def get_resume_enrichment_service(
         candidate_repository=candidate_repository,
         zoho_recruit_client=zoho_recruit_client,
         resume_fetch_service=resume_fetch_service,
+        activity_log_repository=activity_log_repository,
     )
 
 

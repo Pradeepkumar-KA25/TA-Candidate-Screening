@@ -6,6 +6,7 @@ import { takeUntil } from 'rxjs/operators';
 
 import { ReviewBatchDetail, CandidateReview } from '../../models/resume-enrichment.model';
 import { ResumeEnrichmentService } from '../../services/resume-enrichment.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-resume-batch-detail',
@@ -31,7 +32,8 @@ export class ResumeBatchDetailComponent implements OnInit, OnDestroy {
   constructor(
     private resumeEnrichmentService: ResumeEnrichmentService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private notificationService: NotificationService,
   ) {}
 
   ngOnInit(): void {
@@ -65,13 +67,14 @@ export class ResumeBatchDetailComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (batch) => {
           this.batch = batch;
-          this.total = batch.candidates.length;
+          this.total = batch.candidate_total;
           this.loading = false;
         },
         error: (error) => {
           console.error('Error loading batch detail:', error);
           this.error = 'Failed to load batch details. Please try again.';
           this.loading = false;
+          this.notificationService.error(this.error, 'Resume enrichment');
         },
       });
   }
@@ -199,6 +202,7 @@ export class ResumeBatchDetailComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.loading = false;
+          this.notificationService.success('The review batch was deleted.', 'Resume enrichment');
           // Navigate back to batch list after successful deletion
           this.router.navigate(['/resume-enrichment/batches']);
         },
@@ -206,6 +210,7 @@ export class ResumeBatchDetailComponent implements OnInit, OnDestroy {
           console.error('Error deleting batch:', error);
           this.error = 'Failed to delete batch. Please try again.';
           this.loading = false;
+          this.notificationService.error(this.error, 'Resume enrichment');
         },
       });
   }

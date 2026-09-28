@@ -1,0 +1,55 @@
+<section class="audit-page">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Governance</p>
+      <h1>Audit Log</h1>
+      <p class="page-sub">A searchable record of actions performed across the recruitment workspace.</p>
+    </div>
+  </div>
+
+  <form class="filters" (ngSubmit)="applyFilters()">
+    <label>Action <input name="actionType" [(ngModel)]="actionType" placeholder="e.g. sync_completed" /></label>
+    <label>User <input name="actor" [(ngModel)]="actor" placeholder="Name or email" /></label>
+    <label>Entity <input name="entityType" [(ngModel)]="entityType" placeholder="e.g. candidate" /></label>
+    <label>Result
+      <select name="result" [(ngModel)]="result">
+        <option value="">All results</option>
+        <option value="success">Success</option>
+        <option value="failed">Failed</option>
+        <option value="warning">Warning</option>
+      </select>
+    </label>
+    <label>From <input name="occurredFrom" [(ngModel)]="occurredFrom" type="date" /></label>
+    <label>To <input name="occurredTo" [(ngModel)]="occurredTo" type="date" /></label>
+    <div class="filter-actions">
+      <button type="submit" class="primary-button">Apply</button>
+      <button type="button" class="secondary-button" (click)="clearFilters()">Clear</button>
+    </div>
+  </form>
+
+  <div *ngIf="error" class="error-banner" role="alert">{{ error }}</div>
+  <div *ngIf="loading" class="empty-state">Loading audit activity...</div>
+  <div *ngIf="!loading && !error && items.length === 0" class="empty-state">No audit activity matches these filters.</div>
+
+  <div *ngIf="!loading && items.length > 0" class="table-wrap">
+    <table>
+      <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Activity</th><th>Entity</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr *ngFor="let item of items">
+          <td>{{ item.occurred_at | date:'medium' }}</td>
+          <td>{{ item.actor_name || 'System' }}</td>
+          <td><span class="action">{{ actionLabel(item.action_type) }}</span><span class="technical-action">{{ item.action_type }}</span></td>
+          <td>{{ item.description }}</td>
+          <td>{{ item.entity_type || '—' }}<span *ngIf="item.entity_id" class="entity-id">{{ item.entity_id }}</span></td>
+          <td><span class="result" [class.failed]="item.result === 'failed'" [class.warning]="item.result === 'warning'">{{ item.result }}</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pagination" *ngIf="total > 0">
+    <button type="button" class="secondary-button" (click)="previousPage()" [disabled]="page === 1 || loading">Previous</button>
+    <span>Page {{ page }} of {{ pageCount }} · {{ total }} events</span>
+    <button type="button" class="secondary-button" (click)="nextPage()" [disabled]="page >= pageCount || loading">Next</button>
+  </div>
+</section>

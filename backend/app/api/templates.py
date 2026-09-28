@@ -4,8 +4,6 @@ Template API Endpoints - Create, manage, and use custom templates
 
 import uuid
 import json
-import shutil
-from pathlib import Path
 from typing import Optional
 
 from fastapi import (
@@ -26,15 +24,19 @@ from app.models.template_spec import TemplateSpec
 from app.repositories.template_repository import KaniniUserTemplateRepository
 from app.services.kanini_resume_parser import parse_resume
 from app.services.kanini_resume_renderer import KaniniResumeRenderer
+from app.services.template_generation_service import TemplateGenerationError, generate_template_spec
+from app.services.template_spec_renderer import render_html as render_template_spec_html
+from app.storage import StorageBackend, get_storage_backend
+from app.services.ollama_service import OllamaUnavailableError
+from starlette.concurrency import run_in_threadpool
 
 router = APIRouter(tags=["templates"])
 
-# Configure file storage for template drafts
-TEMPLATES_DIR = Path(__file__).resolve().parent.parent.parent / "uploads" / "templates"
-TEMPLATE_DRAFTS_DIR = TEMPLATES_DIR / "drafts"
-TEMPLATE_DRAFTS_DIR.mkdir(parents=True, exist_ok=True)
-
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
+
+
+def _draft_prefix(user_id: uuid.UUID, draft_id: str) -> str:
+    return f"template-drafts/{user_id}/{draft_id}"
 
 
 # ============================================================================
@@ -46,6 +48,7 @@ MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
 async def create_template_draft(
     file: UploadFile = File(...),
     current_recruiter: User = Depends(get_current_recruiter),
+    storage: StorageBackend = Depends(get_storage_backend),
 ):
     """
     Step 1: Upload a sample PDF to create a template draft.
@@ -62,15 +65,12 @@ async def create_template_draft(
         raise HTTPException(status_code=413, detail="File too large (max 10 MB)")
 
     draft_id = str(uuid.uuid4())
-    draft_dir = TEMPLATE_DRAFTS_DIR / draft_id
+    draft_prefix = _draft_prefix(current_recruiter.id, draft_id)
     
     try:
-        draft_dir.mkdir(parents=True, exist_ok=True)
-        pdf_path = draft_dir / "original.pdf"
-        pdf_path.write_bytes(content)
-
-        # Parse resume to extract data
-        parsed_data = parse_resume(str(pdf_path), "pdf")
+        original_reference = storage.write_bytes(f"{draft_prefix}/original.pdf", content)
+        with storage.materialize(original_reference) as pdf_path:
+            parsed_data = parse_resume(str(pdf_path), "pdf")
         
         if not parsed_data:
             raise ValueError("Could not extract readable data from the PDF")
@@ -82,9 +82,9 @@ async def create_template_draft(
             "filename": filename,
             "extracted_data": parsed_data,
         }
-        (draft_dir / "extracted_data.json").write_text(
-            json.dumps(draft_data, ensure_ascii=False, indent=2),
-            encoding="utf-8"
+        storage.write_bytes(
+            f"{draft_prefix}/extracted_data.json",
+            json.dumps(draft_data, ensure_ascii=False, indent=2).encode("utf-8"),
         )
 
         return {
@@ -104,6 +104,7 @@ async def create_template_draft(
 async def generate_template_from_draft(
     draft_id: str,
     current_recruiter: User = Depends(get_current_recruiter),
+    storage: StorageBackend = Depends(get_storage_backend),
 ):
     """
     Step 2: Generate a template specification from the draft.
@@ -114,28 +115,27 @@ async def generate_template_from_draft(
     except ValueError:
         raise HTTPException(status_code=404, detail="Template draft not found")
 
-    draft_dir = TEMPLATE_DRAFTS_DIR / normalized_draft_id
-    extracted_path = draft_dir / "extracted_data.json"
+    draft_prefix = _draft_prefix(current_recruiter.id, normalized_draft_id)
+    extracted_reference = f"{draft_prefix}/extracted_data.json"
     
-    if not draft_dir.is_dir() or not extracted_path.is_file():
+    if not storage.exists(extracted_reference):
         raise HTTPException(status_code=404, detail="Template draft not found")
 
     try:
-        draft_data = json.loads(extracted_path.read_text(encoding="utf-8"))
+        draft_data = json.loads(storage.read_bytes(extracted_reference).decode("utf-8"))
         extracted_data = draft_data.get("extracted_data", {})
 
-        # Generate a default template spec (can be enhanced with AI in future)
-        template_spec = TemplateSpec()  # Uses all defaults
+        template_spec = await run_in_threadpool(generate_template_spec, extracted_data)
         
         # Save template spec
-        (draft_dir / "template_spec.json").write_text(
-            json.dumps(template_spec.model_dump(), indent=2),
-            encoding="utf-8"
+        storage.write_bytes(
+            f"{draft_prefix}/template_spec.json",
+            json.dumps(template_spec.model_dump(), indent=2).encode("utf-8"),
         )
 
         # Generate preview HTML using the template spec
-        preview_html = KaniniResumeRenderer.render_html(extracted_data)
-        (draft_dir / "preview.html").write_text(preview_html, encoding="utf-8")
+        preview_html = render_template_spec_html(extracted_data, template_spec)
+        storage.write_bytes(f"{draft_prefix}/preview.html", preview_html.encode("utf-8"))
 
         return {
             "draft_id": normalized_draft_id,
@@ -148,6 +148,10 @@ async def generate_template_from_draft(
 
     except json.JSONDecodeError:
         raise HTTPException(status_code=422, detail="Template draft data is invalid")
+    except OllamaUnavailableError as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+    except TemplateGenerationError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate template: {str(e)}")
 
@@ -159,6 +163,7 @@ async def save_template_from_draft(
     description: str = Form(""),
     current_recruiter: User = Depends(get_current_recruiter),
     db: Session = Depends(get_db_session),
+    storage: StorageBackend = Depends(get_storage_backend),
 ):
     """
     Step 3: Save the generated template draft as a reusable template.
@@ -175,13 +180,14 @@ async def save_template_from_draft(
     if len(name) > 100:
         raise HTTPException(status_code=400, detail="Template name is too long (max 100 characters)")
 
-    spec_path = TEMPLATE_DRAFTS_DIR / normalized_draft_id / "template_spec.json"
-    if not spec_path.is_file():
+    draft_prefix = _draft_prefix(current_recruiter.id, normalized_draft_id)
+    spec_reference = f"{draft_prefix}/template_spec.json"
+    if not storage.exists(spec_reference):
         raise HTTPException(status_code=404, detail="Generated template draft not found")
 
     try:
         # Load and validate spec
-        spec_data = json.loads(spec_path.read_text(encoding="utf-8"))
+        spec_data = json.loads(storage.read_bytes(spec_reference).decode("utf-8"))
         template_spec = TemplateSpec(**spec_data)
 
         # Save to database
@@ -193,7 +199,7 @@ async def save_template_from_draft(
             template_spec=template_spec.model_dump(),
         )
 
-        shutil.rmtree(spec_path.parent, ignore_errors=True)
+        storage.delete_prefix(draft_prefix)
 
         return {
             "id": str(template.id),

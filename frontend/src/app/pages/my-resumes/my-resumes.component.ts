@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { KaniniResumeService } from '../../services/kanini-resume.service';
+import { NotificationService } from '../../services/notification.service';
 
 interface KaniniResume {
   id: string;
@@ -28,7 +29,8 @@ export class MyResumesComponent implements OnInit {
 
   constructor(
     private kaniniResumeService: KaniniResumeService,
-    private router: Router
+    private router: Router,
+    private notificationService: NotificationService
   ) {}
 
   ngOnInit(): void {
@@ -49,6 +51,7 @@ export class MyResumesComponent implements OnInit {
         },
         error: (err) => {
           this.error = 'Failed to load resumes. Please try again.';
+          this.notificationService.error(this.error, 'Resumes unavailable');
           this.loading = false;
           console.error('Error loading resumes:', err);
         },
@@ -67,11 +70,13 @@ export class MyResumesComponent implements OnInit {
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: () => {
+            this.notificationService.success('The resume was deleted.', 'Resume deleted');
             this.loadResumes();
           },
           error: (err) => {
             this.error = 'Failed to delete resume. Please try again.';
             this.loading = false;
+            this.notificationService.error(this.error, 'Resume deletion failed');
             console.error('Error deleting resume:', err);
           },
         });

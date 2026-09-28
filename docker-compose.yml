@@ -1,0 +1,139 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      POSTGRES_DB: ${DB_NAME:-talent_acquisition}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      # Named volume for persistent data
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ta-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      # App Configuration
+      APP_NAME: ${APP_NAME:-Talent Acquisition API}
+      APP_ENV: ${APP_ENV:-development}
+      DEBUG: ${DEBUG:-false}
+      API_V1_PREFIX: ${API_V1_PREFIX:-/api/v1}
+      
+      # Database Configuration
+      DATABASE_URL: postgresql+psycopg://${DB_USER:-postgres}:${DB_PASSWORD:?DB_PASSWORD is required}@postgres:5432/${DB_NAME:-talent_acquisition}
+      
+      # CORS Configuration
+      FRONTEND_CORS_ORIGIN: ${FRONTEND_CORS_ORIGIN:?FRONTEND_CORS_ORIGIN is required}
+      
+      # JWT Configuration
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?JWT_SECRET_KEY is required}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      REMEMBER_ME_EXPIRE_DAYS: ${REMEMBER_ME_EXPIRE_DAYS:-7}
+      
+      # Integration Configuration
+      INTEGRATION_ENCRYPTION_KEY: ${INTEGRATION_ENCRYPTION_KEY:?INTEGRATION_ENCRYPTION_KEY is required}
+      INITIAL_ADMIN_NAME: ${INITIAL_ADMIN_NAME:-Admin User}
+      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-}
+      
+      # Zoho Configuration
+      ZOHO_ACCOUNTS_BASE_URL: ${ZOHO_ACCOUNTS_BASE_URL:-https://accounts.zoho.com}
+      ZOHO_RECRUIT_BASE_URL: ${ZOHO_RECRUIT_BASE_URL:-https://recruit.zoho.com/recruit/v2}
+      ZOHO_CLIENT_ID: ${ZOHO_CLIENT_ID:-}
+      ZOHO_CLIENT_SECRET: ${ZOHO_CLIENT_SECRET:-}
+      ZOHO_CONNECTION_TIMEOUT_SECONDS: ${ZOHO_CONNECTION_TIMEOUT_SECONDS:-30.0}
+      ZOHO_SYNC_MAX_RECORDS: ${ZOHO_SYNC_MAX_RECORDS:-200}
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
+      LOCAL_STORAGE_ROOT: ${LOCAL_STORAGE_ROOT:-uploads}
+      AZURE_STORAGE_ACCOUNT_URL: ${AZURE_STORAGE_ACCOUNT_URL:-}
+      AZURE_STORAGE_CONTAINER: ${AZURE_STORAGE_CONTAINER:-candidate-files}
+
+      # External Ollama Service
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-}
+      OLLAMA_SECTOR_MODEL: ${OLLAMA_SECTOR_MODEL:-}
+      OLLAMA_MODELS: ${OLLAMA_MODELS:-}
+      AI_PROVIDER_PRIORITY: ${AI_PROVIDER_PRIORITY:-ollama}
+      OLLAMA_REQUEST_TIMEOUT_SECONDS: ${OLLAMA_REQUEST_TIMEOUT_SECONDS:-90}
+      OLLAMA_UPLOAD_TIMEOUT_SECONDS: ${OLLAMA_UPLOAD_TIMEOUT_SECONDS:-10}
+      OLLAMA_BACKGROUND_CHUNK_TIMEOUT_SECONDS: ${OLLAMA_BACKGROUND_CHUNK_TIMEOUT_SECONDS:-180}
+      OLLAMA_NUM_PREDICT: ${OLLAMA_NUM_PREDICT:-2048}
+      OLLAMA_STAGED_LINE_THRESHOLD: ${OLLAMA_STAGED_LINE_THRESHOLD:-50}
+      OLLAMA_SECTION_CHUNK_LINES: ${OLLAMA_SECTION_CHUNK_LINES:-12}
+      OLLAMA_SECTION_OVERLAP_LINES: ${OLLAMA_SECTION_OVERLAP_LINES:-2}
+      OLLAMA_SECTION_NUM_PREDICT: ${OLLAMA_SECTION_NUM_PREDICT:-512}
+      SECTOR_ENRICHMENT_ENABLED: ${SECTOR_ENRICHMENT_ENABLED:-true}
+      SECTOR_ENRICHMENT_ON_UPLOAD: ${SECTOR_ENRICHMENT_ON_UPLOAD:-false}
+      SECTOR_WEB_CONTEXT_ENABLED: ${SECTOR_WEB_CONTEXT_ENABLED:-true}
+      SECTOR_WEB_TIMEOUT_SECONDS: ${SECTOR_WEB_TIMEOUT_SECONDS:-10}
+      SECTOR_MINIMUM_CONFIDENCE: ${SECTOR_MINIMUM_CONFIDENCE:-0.35}
+      
+      # Phase 1 Configuration
+      REVIEW_BATCH_SIZE: ${REVIEW_BATCH_SIZE:-20}
+      RESUME_EXTRACTION_TIMEOUT_SECONDS: ${RESUME_EXTRACTION_TIMEOUT_SECONDS:-120.0}
+      RESUME_EXTRACTION_RETRY_ATTEMPTS: ${RESUME_EXTRACTION_RETRY_ATTEMPTS:-2}
+      ZOHO_WRITE_ENABLED: ${ZOHO_WRITE_ENABLED:-false}
+    
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    
+    volumes:
+      # Mount uploads directory for resume storage
+      - backend_uploads:/app/uploads
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+    
+    networks:
+      - ta-network
+    
+    restart: unless-stopped
+
+  # Angular Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      PORT: 4200
+      BACKEND_URL: http://backend:8000
+    ports:
+      - "${FRONTEND_PORT:-4200}:4200"
+    
+    depends_on:
+      backend:
+        condition: service_healthy
+    
+    networks:
+      - ta-network
+    
+    restart: unless-stopped
+
+volumes:
+  # Named volume for PostgreSQL data persistence
+  postgres_data:
+    driver: local
+  
+  # Named volume for backend uploads
+  backend_uploads:
+    driver: local
+  
+networks:
+  # Custom bridge network for service communication
+  ta-network:
+    driver: bridge

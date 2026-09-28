@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
 
-from app.core.dependencies import get_saved_filter_service, require_roles
+from app.core.dependencies import get_activity_log_repository, get_saved_filter_service, require_roles
+from app.repositories.activity_log_repository import ActivityLogRepository
 from app.models.user import User
 from app.schemas.errors import ErrorResponse
 from app.schemas.saved_filters import SaveFilterRequest, SavedFilterResponse
@@ -46,5 +47,15 @@ async def create_saved_filter(
     request: SaveFilterRequest,
     recruiter: User = Depends(require_roles("Recruiter", "Admin")),
     saved_filter_service: SavedFilterService = Depends(get_saved_filter_service),
+    activity_log_repository: ActivityLogRepository = Depends(get_activity_log_repository),
 ) -> SavedFilterResponse:
-    return saved_filter_service.create_saved_filter(recruiter_id=recruiter.id, request=request)
+    response = saved_filter_service.create_saved_filter(recruiter_id=recruiter.id, request=request)
+    activity_log_repository.create(
+        actor_id=recruiter.id,
+        action_type="saved_filter_created",
+        description=f"Created saved filter '{response.name}'",
+        entity_type="saved_filter",
+        entity_id=response.id,
+        metadata={"job_description_id": str(response.jd_id) if response.jd_id else None},
+    )
+    return response

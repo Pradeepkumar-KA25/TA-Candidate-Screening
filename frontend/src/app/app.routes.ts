@@ -21,6 +21,8 @@ import { TemplateSelectionComponent } from './pages/resume-generator/templates/t
 import { ResumePreviewComponent } from './pages/resume-generator/preview/resume-preview.component';
 import { MyResumesComponent } from './pages/my-resumes/my-resumes.component';
 import { CreateTemplateComponent } from './pages/create-template/create-template.component';
+import { AuditLogComponent } from './pages/audit-log/audit-log.component';
+import { UserManagementComponent } from './pages/user-management/user-management.component';
 import { RESUME_ENRICHMENT_ROUTES } from './modules/resume-enrichment/resume-enrichment.routes';
 
 export const routes: Routes = [
@@ -39,6 +41,8 @@ export const routes: Routes = [
 		canActivate: [authGuard],
 		children: [
 			{ path: 'dashboard', component: DashboardComponent },
+			{ path: 'audit-logs', component: AuditLogComponent },
+			{ path: 'users', component: UserManagementComponent },
 			{ path: 'candidates', component: CandidatesComponent },
 			{ path: 'candidates/:id', component: CandidateFieldsViewComponent },
 			{ path: 'filters', component: FiltersComponent },

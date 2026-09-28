@@ -8,6 +8,7 @@ from app.core.dependencies import (
     get_resume_enrichment_service,
     require_roles,
     get_current_recruiter,
+    get_activity_log_repository,
 )
 from app.models.user import User
 from app.schemas.resume_enrichment import (
@@ -22,6 +23,7 @@ from app.schemas.resume_enrichment import (
     ReviewBatchResponse,
 )
 from app.services.resume_enrichment_service import ResumeEnrichmentService
+from app.repositories.activity_log_repository import ActivityLogRepository
 
 router = APIRouter(prefix="/resume-enrichment", tags=["resume-enrichment"])
 
@@ -151,6 +153,7 @@ def get_review_batch_detail(
 
     response = ReviewBatchDetailResponse.model_validate(batch)
     response.candidates = candidate_responses
+    response.candidate_total = total
     return response
 
 
@@ -166,6 +169,7 @@ def delete_review_batch(
     batch_id: UUID,
     service: ResumeEnrichmentService = Depends(get_resume_enrichment_service),
     current_user: User = Depends(require_roles("Recruiter", "Admin")),
+    activity_log_repository: ActivityLogRepository = Depends(get_activity_log_repository),
 ):
     """
     Delete a review batch and all related records.
@@ -186,6 +190,13 @@ def delete_review_batch(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Review batch {batch_id} not found",
             )
+        activity_log_repository.create(
+            actor_id=current_user.id,
+            action_type="resume_enrichment_batch_deleted",
+            description="Deleted resume enrichment batch",
+            entity_type="review_batch",
+            entity_id=batch_id,
+        )
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

@@ -1336,6 +1336,7 @@ def parse_projects(lines: List[str]) -> List[Dict]:
             normalized_projects.append({
                 "name": p.get("name", ""),
                 "client": p.get("client", ""),
+                "duration": p.get("duration", "") or p.get("dates", ""),
                 "role": p.get("role", ""),
                 "description": p.get("description", ""),
                 "technologies": p.get("technologies", []),
@@ -1596,6 +1597,10 @@ def parse_skill_set(file_path: str, file_type: str) -> Dict[str, List[str]]:
 
 def parse_resume(file_path: str, file_type: str) -> Dict:
     raw_text = extract_text(file_path, file_type)
+    return parse_resume_text(raw_text)
+
+
+def parse_resume_text(raw_text: str) -> Dict:
     sections = split_sections(raw_text)
 
     contact = extract_contact_info(sections.get("header", []))

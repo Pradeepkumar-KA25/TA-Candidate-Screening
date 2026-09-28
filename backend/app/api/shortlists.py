@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import get_current_recruiter
+from app.core.dependencies import get_activity_log_repository, get_current_recruiter
 from app.core.database import get_db_session
 from app.models.user import User
 from app.repositories.shortlist_repository import ShortlistRepository
@@ -31,11 +31,20 @@ async def create_shortlist(
     repository = ShortlistRepository(session)
     service = ShortlistService(repository)
 
-    return service.create_or_update(
+    shortlist = service.create_or_update(
         recruiter_id=current_user.id,
         jd_id=request.jd_id,
         candidate_ids=request.candidate_ids,
     )
+    ActivityLogRepository(session).create(
+        actor_id=current_user.id,
+        action_type="shortlist_updated",
+        description=f"Updated shortlist with {len(request.candidate_ids)} candidates",
+        entity_type="shortlist",
+        entity_id=shortlist.id,
+        metadata={"candidate_count": len(request.candidate_ids), "job_description_id": str(request.jd_id)},
+    )
+    return shortlist
 
 
 @shortlist_router.get("", response_model=list[ShortlistListItemResponse])
@@ -56,6 +65,7 @@ async def remove_candidate_from_shortlist(
     candidate_id: UUID,
     current_user: User = Depends(get_current_recruiter),
     session: Session = Depends(get_db_session),
+    activity_log_repository: ActivityLogRepository = Depends(get_activity_log_repository),
 ):
     """Remove a candidate from a shortlist owned by the current recruiter."""
     repository = ShortlistRepository(session)
@@ -66,6 +76,14 @@ async def remove_candidate_from_shortlist(
             recruiter_id=current_user.id,
             shortlist_id=shortlist_id,
             candidate_id=candidate_id,
+        )
+        activity_log_repository.create(
+            actor_id=current_user.id,
+            action_type="shortlist_candidate_removed",
+            description="Removed candidate from shortlist",
+            entity_type="shortlist_candidate",
+            entity_id=candidate_id,
+            metadata={"shortlist_id": str(shortlist_id)},
         )
     except ValueError as exc:
         code = str(exc)

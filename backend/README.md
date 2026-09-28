@@ -30,6 +30,14 @@ To apply the database migration locally:
 1. Set `DATABASE_URL` if you want to target a database other than the default.
 2. Run `alembic -c alembic.ini upgrade head` from the `backend/` folder.
 
+To create the first administrator, temporarily configure `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD`, then run `python provision_admin.py`. The command is idempotent.
+
+## File Storage
+
+`STORAGE_BACKEND=local` stores Zoho resumes and template drafts below `LOCAL_STORAGE_ROOT` for local development. Azure deployments should use `STORAGE_BACKEND=azure_blob` with `AZURE_STORAGE_ACCOUNT_URL` and `AZURE_STORAGE_CONTAINER`. Azure authentication uses `DefaultAzureCredential`, so deployed applications should use Managed Identity rather than storage keys.
+
+Uploaded resume sources are stored under `resume-jobs/` only while asynchronous Ollama extraction is pending. Extraction status and progress are persisted in `kanini_resumes`; unfinished jobs are recovered on application startup and successful jobs delete their source artifact.
+
 ## Project layout
 - `app/api` - API routers
 - `app/core` - settings and shared core utilities

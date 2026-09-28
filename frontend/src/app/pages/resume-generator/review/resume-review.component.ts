@@ -204,14 +204,23 @@ import { Subject, takeUntil, timeout } from 'rxjs';
       </form>
     </section>
 
-    <div *ngIf="loading()" style="padding: 40px; text-align: center;">
-      <p>Loading resume details...</p>
+    <div *ngIf="loading()" class="extraction-state" role="status" aria-live="polite">
+      <div class="spinner"></div>
+      <h2>Extracting resume details</h2>
+      <p>{{ extractionMessage() }}</p>
+      <div class="progress-track" aria-hidden="true">
+        <span [style.width.%]="extractionProgress()"></span>
+      </div>
+      <strong>{{ extractionProgress() }}%</strong>
     </div>
 
     <div *ngIf="!loading() && error()" style="padding: 40px; text-align: center;" role="alert">
       <p class="error">{{ error() }}</p>
       <button type="button" class="ui-button secondary" (click)="loadResume()" style="margin-top: 20px;">
         Try again
+      </button>
+      <button type="button" class="ui-button" (click)="retryExtraction()" style="margin: 20px 0 0 12px;">
+        Restart extraction
       </button>
     </div>
   `,
@@ -227,6 +236,9 @@ export class ResumeReviewComponent implements OnInit, OnDestroy {
   loading = signal(true);
   saving = signal(false);
   error = signal('');
+  extractionProgress = signal(0);
+  extractionMessage = signal('Preparing your resume...');
+  private pollTimer: ReturnType<typeof setTimeout> | null = null;
 
   form = this.fb.nonNullable.group({
     contact: this.fb.nonNullable.group({
@@ -255,11 +267,30 @@ export class ResumeReviewComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    let navigationData =
+      this.router.getCurrentNavigation()?.extras.state?.['parsedData'] ??
+      window.history.state?.['parsedData'];
+
     // Subscribe to route params changes to handle navigation
     this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
       this.resumeId = params['resumeId'] || '';
       if (this.resumeId) {
-        this.loadResume();
+        if (navigationData) {
+          try {
+            this.populateForm(navigationData);
+            this.extractionProgress.set(100);
+            this.loading.set(false);
+            window.history.replaceState(
+              { navigationId: window.history.state?.navigationId },
+              document.title
+            );
+            navigationData = null;
+          } catch {
+            this.loadResume();
+          }
+        } else {
+          this.loadResume();
+        }
       } else {
         this.error.set('Invalid resume ID');
         this.loading.set(false);
@@ -268,6 +299,7 @@ export class ResumeReviewComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.pollTimer) clearTimeout(this.pollTimer);
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -290,7 +322,23 @@ export class ResumeReviewComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (resume) => {
+          if (resume.extraction_status === 'pending' || resume.extraction_status === 'processing') {
+            this.extractionProgress.set(resume.extraction_progress || 5);
+            this.extractionMessage.set(
+              resume.extraction_status === 'pending'
+                ? 'Extraction is queued...'
+                : 'Reading experience and projects with Ollama...'
+            );
+            this.pollTimer = setTimeout(() => this.loadResume(), 2000);
+            return;
+          }
+          if (resume.extraction_status === 'failed') {
+            this.error.set(resume.extraction_error || 'Resume extraction failed');
+            this.loading.set(false);
+            return;
+          }
           try {
+            this.extractionProgress.set(100);
             this.populateForm(resume['parsed_data']);
             this.loading.set(false);
           } catch (e) {
@@ -316,7 +364,23 @@ export class ResumeReviewComponent implements OnInit, OnDestroy {
       });
   }
 
+  retryExtraction(): void {
+    this.loading.set(true);
+    this.error.set('');
+    this.extractionProgress.set(5);
+    this.extractionMessage.set('Restarting extraction...');
+    this.kaniniService.retryExtraction(this.resumeId).subscribe({
+      next: () => this.loadResume(),
+      error: (err) => {
+        this.error.set(err?.error?.detail || 'Unable to restart extraction');
+        this.loading.set(false);
+      },
+    });
+  }
+
   private populateForm(data: any): void {
+    this.experience.clear();
+    this.projects.clear();
     console.log('=== Resume Data Received ===');
     console.log('Full parsed_data:', data);
     console.log('Experience count:', data.experience?.length || 0);

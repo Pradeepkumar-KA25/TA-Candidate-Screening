@@ -10,6 +10,8 @@ from sqlalchemy.orm import Session
 from app.models.activity_log import ActivityLog
 from app.models.candidate import Candidate
 from app.models.duplicate_review import DuplicateReview
+from app.models.candidate_review import CandidateReview
+from app.models.review_batch import ReviewBatch
 from app.models.saved_filter import SavedFilter
 from app.models.shortlist import Shortlist
 from app.models.shortlist_candidate import ShortlistCandidate
@@ -21,6 +23,9 @@ from app.schemas.dashboard import (
     DashboardCountItem,
     DashboardRecentActivityResponse,
     DashboardStatsResponse,
+    DashboardEnrichmentStats,
+    DashboardAnalyticsResponse,
+    DashboardSeriesPoint,
 )
 
 
@@ -58,6 +63,29 @@ class DashboardService:
             .limit(1)
         )
         integration = self.integration_settings_repository.get_or_create(self.provider_name)
+        enrichment = DashboardEnrichmentStats(
+            pending_batches=self.session.scalar(
+                select(func.count(ReviewBatch.id)).where(ReviewBatch.status.in_(["PENDING", "PROCESSING"]))
+            ) or 0,
+            pending_reviews=self.session.scalar(
+                select(func.count(CandidateReview.id)).where(CandidateReview.approval_status == "PENDING")
+            ) or 0,
+            approved_reviews=self.session.scalar(
+                select(func.count(CandidateReview.id)).where(CandidateReview.approval_status == "APPROVED")
+            ) or 0,
+            rejected_reviews=self.session.scalar(
+                select(func.count(CandidateReview.id)).where(CandidateReview.approval_status == "REJECTED")
+            ) or 0,
+        )
+        activity_summary = [
+            DashboardCountItem(label=action_type, count=count)
+            for action_type, count in self.session.execute(
+                select(ActivityLog.action_type, func.count(ActivityLog.id))
+                .group_by(ActivityLog.action_type)
+                .order_by(desc(func.count(ActivityLog.id)))
+                .limit(8)
+            )
+        ]
 
         attention_items: list[DashboardAttentionItem] = []
         if latest_sync and latest_sync.status == "failed":
@@ -93,6 +121,8 @@ class DashboardService:
             ],
             source_breakdown=self._get_source_breakdown(),
             needs_attention=attention_items,
+            resume_enrichment=enrichment,
+            activity_summary=activity_summary,
         )
 
     def get_recent_activity(self, recruiter_id: UUID, limit: int = 5) -> DashboardRecentActivityResponse:
@@ -108,11 +138,67 @@ class DashboardService:
                 actor_id=row.actor_id,
                 action_type=row.action_type,
                 description=row.description,
+                entity_type=row.entity_type,
+                entity_id=row.entity_id,
+                result=row.result,
+                metadata=row.audit_metadata,
                 occurred_at=row.occurred_at,
             )
             for row in self.session.scalars(statement).all()
         ]
         return DashboardRecentActivityResponse(items=items)
+
+    def get_analytics(self, recruiter_id: UUID, days: int = 7) -> DashboardAnalyticsResponse:
+        start = datetime.now(UTC) - timedelta(days=days - 1)
+        growth_rows = self.session.execute(
+            select(func.date(Candidate.created_at), func.count(Candidate.id))
+            .where(Candidate.created_at >= start)
+            .group_by(func.date(Candidate.created_at))
+            .order_by(func.date(Candidate.created_at))
+        )
+        growth = [DashboardSeriesPoint(label=str(label), value=count) for label, count in growth_rows]
+        pipeline = [
+            DashboardCountItem(label="New", count=self._count_candidates_with_statuses("new", "active")),
+            DashboardCountItem(label="Screening", count=self._count_candidates_with_statuses("screening", "open_to_opportunities")),
+            DashboardCountItem(label="Interview", count=self._count_candidates_with_statuses("interview", "interview_scheduled")),
+            DashboardCountItem(label="Selected", count=self._count_candidates_with_statuses("selected", "hired")),
+        ]
+        source_label = func.coalesce(Candidate.source, "Unknown").label("source_label")
+        source_rows = self.session.execute(
+            select(source_label, func.count(Candidate.id))
+            .group_by(source_label)
+            .order_by(desc(func.count(Candidate.id)))
+            .limit(8)
+        )
+        sources = [DashboardCountItem(label=label or "Unknown", count=count) for label, count in source_rows]
+        sync_rows = self.session.execute(
+            select(SyncLog.status, func.count(SyncLog.id))
+            .where(SyncLog.started_at >= start)
+            .group_by(SyncLog.status)
+        )
+        sync_outcomes = [DashboardCountItem(label=status, count=count) for status, count in sync_rows]
+        enrichment_rows = self.session.execute(
+            select(CandidateReview.approval_status, func.count(CandidateReview.id))
+            .where(CandidateReview.updated_at >= start)
+            .group_by(CandidateReview.approval_status)
+        )
+        enrichment_outcomes = [DashboardCountItem(label=status, count=count) for status, count in enrichment_rows]
+        activity_statement = select(ActivityLog.action_type, func.count(ActivityLog.id)).where(ActivityLog.occurred_at >= start)
+        if recruiter_id:
+            activity_statement = activity_statement.where(ActivityLog.actor_id == recruiter_id)
+        activity_rows = self.session.execute(
+            activity_statement.group_by(ActivityLog.action_type).order_by(desc(func.count(ActivityLog.id))).limit(10)
+        )
+        activity_by_action = [DashboardCountItem(label=action, count=count) for action, count in activity_rows]
+        return DashboardAnalyticsResponse(
+            days=days,
+            candidate_growth=growth,
+            pipeline=pipeline,
+            sources=sources,
+            sync_outcomes=sync_outcomes,
+            enrichment_outcomes=enrichment_outcomes,
+            activity_by_action=activity_by_action,
+        )
 
     def _get_current_shortlist_size(self, recruiter_id: UUID) -> int:
         shortlist_id = self.session.scalar(
@@ -134,7 +220,7 @@ class DashboardService:
         ) or 0
 
     def _get_source_breakdown(self) -> list[DashboardCountItem]:
-        source_label = func.coalesce(Candidate.source, "Unknown")
+        source_label = func.coalesce(Candidate.source, "Unknown").label("source_label")
         statement = (
             select(source_label, func.count(Candidate.id).label("count"))
             .group_by(source_label)

@@ -7,6 +7,7 @@ import { takeUntil } from 'rxjs/operators';
 
 import { CandidateReview, ProposedFieldChange } from '../../models/resume-enrichment.model';
 import { ResumeEnrichmentService } from '../../services/resume-enrichment.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-candidate-review',
@@ -38,7 +39,8 @@ export class CandidateReviewComponent implements OnInit, OnDestroy {
   constructor(
     private resumeEnrichmentService: ResumeEnrichmentService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private notificationService: NotificationService,
   ) {}
 
   /**
@@ -260,6 +262,7 @@ export class CandidateReviewComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (response) => {
           this.success = response.message;
+          this.notificationService.success(response.message, 'Review updated');
           this.submitting = false;
           this.cancelBulkAction();
           this.selectedFieldIds.clear();
@@ -271,6 +274,7 @@ export class CandidateReviewComponent implements OnInit, OnDestroy {
           console.error('Error submitting action:', error);
           this.error = `Failed to ${this.selectedAction} changes. Please try again.`;
           this.submitting = false;
+          this.notificationService.error(this.error, 'Review update failed');
         },
       });
   }
@@ -296,6 +300,7 @@ export class CandidateReviewComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (response) => {
           this.success = response.message;
+          this.notificationService.success(response.message, 'Changes approved');
           this.submitting = false;
           this.approvalNotes = '';
 
@@ -306,6 +311,7 @@ export class CandidateReviewComponent implements OnInit, OnDestroy {
           console.error('Error approving all:', error);
           this.error = 'Failed to approve all changes. Please try again.';
           this.submitting = false;
+          this.notificationService.error(this.error, 'Approval failed');
         },
       });
   }
@@ -331,6 +337,7 @@ export class CandidateReviewComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (response) => {
           this.success = response.message;
+          this.notificationService.success(response.message, 'Changes rejected');
           this.submitting = false;
           this.approvalNotes = '';
 
@@ -341,6 +348,7 @@ export class CandidateReviewComponent implements OnInit, OnDestroy {
           console.error('Error rejecting all:', error);
           this.error = 'Failed to reject all changes. Please try again.';
           this.submitting = false;
+          this.notificationService.error(this.error, 'Rejection failed');
         },
       });
   }
