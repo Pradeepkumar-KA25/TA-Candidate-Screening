@@ -26,13 +26,23 @@
         aria-describedby="batch-size-help"
       />
       <p id="batch-size-help">Choose between 1 and 1000 candidates. The default is 20.</p>
+      <p *ngIf="batchSizeError" class="batch-size-error" role="alert">{{ batchSizeError }}</p>
+      <div *ngIf="showLargeBatchWarning" class="large-batch-warning" role="alert">
+        <strong>More candidates will slow down the process. Try fewer than 50 candidates for a better experience.</strong>
+        <div class="dialog-actions">
+          <button type="button" class="btn btn-secondary" (click)="editBatchSize()">Edit Candidate Count</button>
+          <button type="button" class="btn btn-primary" (click)="continueWithLargeBatch()">
+            Continue with {{ batchSize }} Candidates
+          </button>
+        </div>
+      </div>
       <div class="dialog-actions">
         <button type="button" class="btn btn-secondary" (click)="cancelBatchCreation()">Cancel</button>
         <button
+          *ngIf="!showLargeBatchWarning"
           type="button"
           class="btn btn-primary"
           (click)="createBatch()"
-          [disabled]="batchSize < 1 || batchSize > 1000"
         >
           Create Batch
         </button>

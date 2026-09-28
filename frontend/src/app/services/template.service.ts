@@ -11,14 +11,17 @@ import {
   Template,
   TemplateListResponse,
 } from '../models/template.model';
+import { ApiConfigService } from '../config/api.config';
 
 @Injectable({
   providedIn: 'root',
 })
 export class TemplateService {
-  private readonly apiUrl = '/api/v1/templates';
+  private readonly apiUrl: string;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, apiConfig: ApiConfigService) {
+    this.apiUrl = `${apiConfig.getApiBaseUrl()}/templates`;
+  }
 
   /**
    * Step 1: Upload a sample PDF to create a template draft

@@ -22,6 +22,8 @@ class DashboardStatsResponse(BaseModel):
     pipeline: list["DashboardCountItem"] = []
     source_breakdown: list["DashboardCountItem"] = []
     needs_attention: list["DashboardAttentionItem"] = []
+    resume_enrichment: "DashboardEnrichmentStats | None" = None
+    activity_summary: list["DashboardCountItem"] = []
 
 
 class DashboardCountItem(BaseModel):
@@ -40,8 +42,34 @@ class DashboardActivityItemResponse(BaseModel):
     actor_id: UUID | None = None
     action_type: str
     description: str
+    entity_type: str | None = None
+    entity_id: str | None = None
+    result: str
+    metadata: dict | None = None
     occurred_at: datetime
 
 
 class DashboardRecentActivityResponse(BaseModel):
     items: list[DashboardActivityItemResponse]
+
+
+class DashboardEnrichmentStats(BaseModel):
+    pending_batches: int = 0
+    pending_reviews: int = 0
+    approved_reviews: int = 0
+    rejected_reviews: int = 0
+
+
+class DashboardSeriesPoint(BaseModel):
+    label: str
+    value: int
+
+
+class DashboardAnalyticsResponse(BaseModel):
+    days: int
+    candidate_growth: list[DashboardSeriesPoint] = []
+    pipeline: list[DashboardCountItem] = []
+    sources: list[DashboardCountItem] = []
+    sync_outcomes: list[DashboardCountItem] = []
+    enrichment_outcomes: list[DashboardCountItem] = []
+    activity_by_action: list[DashboardCountItem] = []

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, status
 
 from app.core.dependencies import get_dashboard_service, require_roles
 from app.models.user import User
-from app.schemas.dashboard import DashboardRecentActivityResponse, DashboardStatsResponse
+from app.schemas.dashboard import DashboardAnalyticsResponse, DashboardRecentActivityResponse, DashboardStatsResponse
 from app.schemas.errors import ErrorResponse
 from app.services.dashboard_service import DashboardService
 
@@ -47,3 +47,12 @@ async def get_dashboard_recent_activity(
     dashboard_service: DashboardService = Depends(get_dashboard_service),
 ) -> DashboardRecentActivityResponse:
     return dashboard_service.get_recent_activity(current_recruiter.id, limit=limit)
+
+
+@dashboard_router.get("/analytics", response_model=DashboardAnalyticsResponse)
+async def get_dashboard_analytics(
+    days: int = Query(7, ge=7, le=90),
+    current_recruiter: User = Depends(require_roles("Recruiter", "Admin")),
+    dashboard_service: DashboardService = Depends(get_dashboard_service),
+) -> DashboardAnalyticsResponse:
+    return dashboard_service.get_analytics(current_recruiter.id, days=days)

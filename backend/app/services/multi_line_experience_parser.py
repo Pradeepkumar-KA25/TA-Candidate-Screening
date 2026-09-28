@@ -223,9 +223,6 @@ def _group_experience_lines(lines: List[str]) -> List[List[str]]:
         
         # Skip empty lines
         if not line:
-            if current_group:
-                groups.append(current_group)
-                current_group = []
             continue
         
         # Check if this is a company+location line
@@ -362,90 +359,128 @@ def parse_experience_multiline(lines: List[str]) -> List[Dict]:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def parse_projects_multiline(lines: List[str]) -> List[Dict]:
-    """Parse projects from multi-line format.
-    
-    Format:
-        Line N: Project Name [gap] Client/Company
-        Line N+1: Description/Role [gap] Dates (optional)
-        Line N+2+: Bullet points with details/technologies
-    
-    Args:
-        lines: List of text lines from resume projects section
-    
-    Returns:
-        List of dicts with keys: name, description, client, role, dates, responsibilities, technologies
-    """
-    projects = []
-    current_proj: Optional[Dict] = None
-    i = 0
-    
-    while i < len(lines):
-        line = (lines[i] or "").strip()
-        i += 1
-        
-        # Skip empty lines
+    """Parse projects without promoting arbitrary prose to project entries."""
+    projects: List[Dict] = []
+    current: Optional[Dict] = None
+    field_pattern = re.compile(
+        r"^(?:project\s+)?(name|title|client|customer|role|duration|period|dates?"
+        r"|technologies?|tech\s*stack|tools?|environment|description"
+        r"|responsibilities|roles\s+and\s+responsibilities)\s*[:\-]\s*(.*)$",
+        re.IGNORECASE,
+    )
+    numbered_project_pattern = re.compile(
+        r"^project\s*(?:name\s*)?(?:[ivx]+|\d+)?\s*[:\-]\s*(.+)$",
+        re.IGNORECASE,
+    )
+    project_heading_pattern = re.compile(
+        r"^project\s*(?:[ivx]+|\d+)\s*[:\-]?$",
+        re.IGNORECASE,
+    )
+    expecting_name = False
+
+    def new_project(name: str) -> Dict:
+        return {
+            "name": name.strip(),
+            "description": "",
+            "client": "",
+            "role": "",
+            "dates": "",
+            "responsibilities": [],
+            "technologies": [],
+        }
+
+    def flush() -> None:
+        nonlocal current
+        if current and current.get("name"):
+            projects.append(current)
+        current = None
+
+    def next_meaningful(index: int) -> str:
+        for candidate in lines[index:]:
+            text = str(candidate or "").strip()
+            if text:
+                return text
+        return ""
+
+    for index, raw_line in enumerate(lines):
+        line = str(raw_line or "").strip()
         if not line:
             continue
-        
-        # Skip if it's a bullet point (we're in details section)
-        if BULLET_PATTERN.match(line):
-            if current_proj:
-                detail = BULLET_PATTERN.sub("", line).strip()
-                if detail:
-                    # Check if it's a technology or responsibility
-                    if any(tech in detail.lower() for tech in ["javascript", "python", "java", "c#", "sql", "html", "css", "react", "angular", "node", "docker", "kubernetes", "aws", "azure"]):
-                        current_proj["technologies"].append(detail)
-                    else:
-                        current_proj["responsibilities"].append(detail)
+
+        if project_heading_pattern.match(line):
+            flush()
+            expecting_name = True
             continue
-        
-        # Check if this looks like a project name line
-        left, right = _split_line_left_right(line)
-        
-        # Heuristic: if left part is short and capitalized, it's probably the project name
-        if left and len(left) < 60 and re.match(r"^[A-Z]", left):
-            # Save previous project if any
-            if current_proj and current_proj.get("name"):
-                projects.append(current_proj)
-            
-            # Start new project entry
-            current_proj = {
-                "name": left,
-                "description": "",
-                "client": right if right and not _is_job_title(right) else "",
-                "role": "",
-                "dates": "",
-                "responsibilities": [],
-                "technologies": []
-            }
-            
-            # Look ahead for description/role line
-            if i < len(lines):
-                next_line = (lines[i] or "").strip()
-                if next_line and not BULLET_PATTERN.match(next_line):
-                    dates_str, remaining = _extract_dates_from_line(next_line)
-                    current_proj["dates"] = dates_str
-                    
-                    if remaining:
-                        left_part, right_part = _split_line_left_right(remaining)
-                        # Check which part contains role/description
-                        if _is_job_title(left_part):
-                            current_proj["role"] = left_part
-                            if right_part:
-                                current_proj["description"] = right_part
-                        elif _is_job_title(right_part):
-                            current_proj["role"] = right_part
-                            if left_part:
-                                current_proj["description"] = left_part
-                        else:
-                            # Neither is clearly a role, use as description
-                            current_proj["description"] = (left_part + " " + right_part).strip()
-                    
-                    i += 1
-    
-    if current_proj and current_proj.get("name"):
-        projects.append(current_proj)
-    
+
+        if expecting_name:
+            current = new_project(line)
+            expecting_name = False
+            continue
+
+        numbered_match = numbered_project_pattern.match(line)
+        field_match = field_pattern.match(line)
+        if numbered_match:
+            flush()
+            current = new_project(numbered_match.group(1))
+            continue
+
+        if field_match and field_match.group(1).lower() in {"name", "title"}:
+            flush()
+            current = new_project(field_match.group(2))
+            continue
+
+        if current is None:
+            following = next_meaningful(index + 1)
+            first_title = not projects and len(line.split()) <= 12 and not line.endswith((".", ";"))
+            if len(line) <= 100 and (
+                first_title or field_pattern.match(following) or BULLET_PATTERN.match(following)
+            ):
+                current = new_project(line)
+            continue
+
+        if field_match:
+            label = field_match.group(1).lower()
+            value = field_match.group(2).strip()
+            if label in {"client", "customer"}:
+                current["client"] = value
+            elif label in {"role"}:
+                current["role"] = value
+            elif label in {"duration", "period", "date", "dates"}:
+                current["dates"] = value
+            elif label in {"technology", "technologies", "tech stack", "tool", "tools", "environment"}:
+                current["technologies"].extend(
+                    item.strip() for item in re.split(r"[,|;/]", value) if item.strip()
+                )
+            elif label in {"responsibilities", "roles and responsibilities"}:
+                if value:
+                    current["responsibilities"].append(value)
+            elif label == "description" and value:
+                current["description"] = (current["description"] + " " + value).strip()
+            continue
+
+        if BULLET_PATTERN.match(line):
+            detail = BULLET_PATTERN.sub("", line).strip()
+            if detail:
+                current["responsibilities"].append(detail)
+            continue
+
+        dates, remaining = _extract_dates_from_line(line)
+        if dates and not current["dates"]:
+            current["dates"] = dates
+            if remaining and _is_job_title(remaining) and not current["role"]:
+                current["role"] = remaining
+            elif remaining:
+                current["description"] = (current["description"] + " " + remaining).strip()
+            continue
+
+        following = next_meaningful(index + 1)
+        if field_pattern.match(following) and len(line) <= 100:
+            flush()
+            current = new_project(line)
+        else:
+            current["description"] = (current["description"] + " " + line).strip()
+
+    flush()
     return projects
 
 

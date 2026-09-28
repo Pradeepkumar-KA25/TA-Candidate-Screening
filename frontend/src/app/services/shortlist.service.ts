@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { ApiConfigService } from '../config/api.config';
 
 export interface ShortlistResponse {
   id: string;
@@ -57,7 +58,7 @@ export interface ShortlistListItem {
 })
 export class ShortlistService {
   private readonly httpClient = inject(HttpClient);
-  private readonly apiBaseUrl = '/api/v1';
+  private readonly apiBaseUrl = inject(ApiConfigService).getApiBaseUrl();
 
   createShortlist(jdId: string, candidateIds: string[]): Observable<ShortlistResponse> {
     return this.httpClient.post<ShortlistResponse>(`${this.apiBaseUrl}/shortlists`, {

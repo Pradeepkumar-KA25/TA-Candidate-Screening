@@ -7,7 +7,8 @@ WORKDIR /app
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    PORT=8000
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -30,10 +31,10 @@ RUN mkdir -p uploads/resumes
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD python -c "import httpx; httpx.get('http://localhost:8000/health', timeout=5)" || exit 1
+    CMD python -c "import os, httpx; httpx.get('http://127.0.0.1:{}/health'.format(os.getenv('PORT', '8000')), timeout=5)" || exit 1
 
 # Expose port 8000
 EXPOSE 8000
 
-# Run migrations and start application
-CMD ["sh", "-c", "python run_migration.py && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# Run migrations, provision an optional initial admin, and start the application
+CMD ["sh", "-c", "python run_migration.py && python provision_admin.py && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

@@ -20,3 +20,5 @@ docx2txt==0.8
 lxml>=5.0.0
 reportlab==5.0.1
 playwright==1.62.0
+azure-identity==1.25.1
+azure-storage-blob==12.27.0

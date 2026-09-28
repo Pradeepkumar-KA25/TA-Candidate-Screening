@@ -14,6 +14,7 @@ from app.repositories.candidate_repository import CandidateRepository
 from app.repositories.candidate_review_repository import CandidateReviewRepository
 from app.repositories.proposed_field_change_repository import ProposedFieldChangeRepository
 from app.repositories.review_batch_repository import ReviewBatchRepository
+from app.repositories.activity_log_repository import ActivityLogRepository
 from app.services.resume_fetch_service import ResumeFetchService
 
 logger = logging.getLogger("resume_enrichment")
@@ -48,6 +49,7 @@ class ResumeEnrichmentService:
         candidate_repository: CandidateRepository,
         zoho_recruit_client: ZohoRecruitClient,
         resume_fetch_service: ResumeFetchService,
+        activity_log_repository: ActivityLogRepository | None = None,
     ):
         self.review_batch_repository = review_batch_repository
         self.candidate_review_repository = candidate_review_repository
@@ -55,6 +57,7 @@ class ResumeEnrichmentService:
         self.candidate_repository = candidate_repository
         self.zoho_recruit_client = zoho_recruit_client
         self.resume_fetch_service = resume_fetch_service
+        self.activity_log_repository = activity_log_repository
 
     def create_review_batch(
         self, batch_size: int | None = None, access_token: str | None = None, created_by_user_id: UUID | None = None
@@ -64,7 +67,7 @@ class ResumeEnrichmentService:
 
         1. Select batch_size candidates (or from config)
         2. For each candidate, fetch Zoho data + resume
-        3. Extract resume data via Ollama
+        3. Extract structured resume data
         4. Compare Zoho vs extracted values
         5. Create proposed changes (only for empty Zoho fields with resume data)
         6. Save to database
@@ -105,6 +108,8 @@ class ResumeEnrichmentService:
                 batch.total_candidates = 0
                 return batch
 
+            batch.total_candidates = len(candidates_to_review)
+
             logger.info(f"Processing {len(candidates_to_review)} candidates in batch {batch_number}")
 
             # Update batch status
@@ -133,6 +138,15 @@ class ResumeEnrichmentService:
 
             logger.info(
                 f"Batch {batch_number} completed: {successful_count} processed, {error_count} errors"
+            )
+            self._log_activity(
+                actor_id=created_by_user_id,
+                action_type="resume_enrichment_batch_created",
+                description=f"Created resume enrichment batch {batch_number} for {len(candidates_to_review)} candidates",
+                entity_type="review_batch",
+                entity_id=batch.id,
+                result="warning" if error_count else "success",
+                metadata={"processed": successful_count, "errors": error_count},
             )
 
             return batch
@@ -190,6 +204,14 @@ class ResumeEnrichmentService:
                 )
 
         logger.info(f"Approved {count} proposed changes for candidate review {candidate_review_id}")
+        self._log_activity(
+            actor_id=user_id,
+            action_type="resume_enrichment_changes_approved",
+            description=f"Approved {count} resume enrichment changes",
+            entity_type="candidate_review",
+            entity_id=candidate_review_id,
+            metadata={"field_ids": [str(field_id) for field_id in field_ids]},
+        )
         return count
 
     def reject_proposed_changes(
@@ -233,6 +255,14 @@ class ResumeEnrichmentService:
                 )
 
         logger.info(f"Rejected {count} proposed changes for candidate review {candidate_review_id}")
+        self._log_activity(
+            actor_id=user_id,
+            action_type="resume_enrichment_changes_rejected",
+            description=f"Rejected {count} resume enrichment changes",
+            entity_type="candidate_review",
+            entity_id=candidate_review_id,
+            metadata={"field_ids": [str(field_id) for field_id in field_ids]},
+        )
         return count
 
     # Private helper methods
@@ -261,7 +291,7 @@ class ResumeEnrichmentService:
             logger.warning(f"No resume available for {candidate.full_name}")
             return
 
-        # Extract resume data using Ollama
+        # Extract structured resume data
         try:
             extracted_data = self._extract_resume_data(candidate.resume_url)
             logger.debug(f"Extracted resume data for {candidate.full_name}: {extracted_data}")
@@ -291,16 +321,10 @@ class ResumeEnrichmentService:
                 )
                 logger.debug(f"Created proposed change for {display_name}: {extracted_value}")
 
-    def _extract_resume_data(self, resume_file_path: str) -> dict[str, Any]:
-        """Extract structured data from resume using Ollama."""
+    def _extract_resume_data(self, resume_reference: str) -> dict[str, Any]:
+        """Extract structured data from a stored resume."""
         try:
-            from pathlib import Path as PathlibPath
-
-            if not PathlibPath(resume_file_path).exists():
-                raise ResumeEnrichmentError(f"Resume file not found: {resume_file_path}")
-
-            # Determine file type from extension
-            file_ext = PathlibPath(resume_file_path).suffix.lower()
+            file_ext = "." + resume_reference.rsplit(".", 1)[-1].lower()
             file_type_map = {
                 ".pdf": "pdf",
                 ".docx": "docx",
@@ -311,7 +335,8 @@ class ResumeEnrichmentService:
             # Use existing Kanini parser
             from app.services.kanini_resume_parser import parse_resume
 
-            extracted = parse_resume(resume_file_path, file_type)
+            with self.resume_fetch_service.storage.materialize(resume_reference) as resume_path:
+                extracted = parse_resume(str(resume_path), file_type)
 
             return extracted if isinstance(extracted, dict) else extracted.__dict__
 
@@ -332,15 +357,18 @@ class ResumeEnrichmentService:
         }
 
     def _get_extracted_value(self, extracted_data: dict[str, Any], field_path: str) -> Any:
-        """Get nested value from extracted data using dot notation (e.g., 'contact.email')."""
-        keys = field_path.split(".")
+        """Get nested values using dot notation and zero-based list notation."""
+        import re
+
+        keys = [match.group(1) or match.group(0) for match in re.finditer(r"[^.\[\]]+|\[(\d+)\]", field_path)]
         value = extracted_data
 
         for key in keys:
             if isinstance(value, dict):
                 value = value.get(key)
-            elif isinstance(value, list) and key.startswith("0"):
-                value = value[0] if value else None
+            elif isinstance(value, list) and key.isdigit():
+                index = int(key)
+                value = value[index] if index < len(value) else None
             else:
                 return None
 
@@ -419,3 +447,26 @@ class ResumeEnrichmentService:
         except Exception as exc:
             logger.error(f"Failed to delete batch {batch_id}: {str(exc)}")
             return False
+
+    def _log_activity(
+        self,
+        *,
+        actor_id: UUID | None,
+        action_type: str,
+        description: str,
+        entity_type: str,
+        entity_id: UUID,
+        result: str = "success",
+        metadata: dict | None = None,
+    ) -> None:
+        if self.activity_log_repository is None:
+            return
+        self.activity_log_repository.create(
+            actor_id=actor_id,
+            action_type=action_type,
+            description=description,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            result=result,
+            metadata=metadata,
+        )

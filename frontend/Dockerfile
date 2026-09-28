@@ -22,8 +22,11 @@ FROM nginx:alpine
 # Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf
 
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/
+# The official Nginx entrypoint renders templates with environment variables.
+ENV PORT=4200 \
+    BACKEND_URL=http://backend:8000 \
+    NGINX_ENVSUBST_FILTER="^(PORT|BACKEND_URL)$"
+COPY nginx.conf /etc/nginx/templates/default.conf.template
 
 # Copy built app from builder stage
 COPY --from=builder /app/dist/talent-acquisition-frontend/browser /usr/share/nginx/html
@@ -33,7 +36,7 @@ EXPOSE 4200
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost:4200/ || exit 1
+    CMD wget --quiet --tries=1 --spider "http://127.0.0.1:${PORT}/health" || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]

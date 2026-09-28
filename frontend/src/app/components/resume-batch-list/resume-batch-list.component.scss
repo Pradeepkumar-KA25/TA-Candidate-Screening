@@ -132,6 +132,32 @@
     font-size: 13px;
   }
 
+  .batch-size-error {
+    margin: -12px 0 16px;
+    color: #b42318;
+    font-weight: 600;
+  }
+
+  .large-batch-warning {
+    margin-bottom: 20px;
+    padding: 12px;
+    border: 1px solid #f0ad4e;
+    border-radius: 4px;
+    background: #fff8e6;
+    color: #6b4f00;
+
+    strong {
+      display: block;
+      margin-bottom: 16px;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .dialog-actions {
+      flex-wrap: wrap;
+    }
+  }
+
   .dialog-actions {
     display: flex;
     justify-content: flex-end;

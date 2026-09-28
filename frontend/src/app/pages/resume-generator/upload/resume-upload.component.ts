@@ -1,4 +1,4 @@
-import { Component, signal, OnInit, inject } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -23,15 +23,12 @@ import { KaniniResumeService } from '../../../services/kanini-resume.service';
         <label for="model-select">
           <span class="label-text">AI Model for Extraction</span>
           <select id="model-select" [(ngModel)]="selectedModel" [disabled]="uploading()">
-            <option value="auto">Auto (Recommended)</option>
-            <optgroup label="Ollama Models" *ngIf="llmModelsLoaded()">
-              <option *ngFor="let model of llmModels()" [value]="model.value">
-                {{ model.label }}
-              </option>
-            </optgroup>
+            <option *ngFor="let model of llmModels()" [value]="model.value" [disabled]="!model.available">
+              {{ model.label }}
+            </option>
           </select>
         </label>
-        <p class="model-hint">Choose an AI model to extract and parse your resume data accurately.</p>
+        <p class="model-hint">The deterministic parser is used automatically if Ollama is unavailable.</p>
       </div>
 
       <div class="upload-container">
@@ -131,35 +128,18 @@ export class ResumeUploadComponent implements OnInit {
   uploading = signal(false);
   error = signal('');
   selectedModel = 'auto';
-  llmModels = signal<any[]>([]);
-  llmModelsLoaded = signal(false);
+  llmModels = signal<any[]>([{ label: 'Auto', value: 'auto', available: true }]);
 
   ngOnInit(): void {
-    this.loadLlmModels();
-  }
-
-  private loadLlmModels(): void {
     this.kaniniService.getLlmModels().subscribe({
       next: (response) => {
-        const models = response.models || [
-          { label: 'Qwen3 32B', value: 'ollama:qwen3:32b', provider: 'ollama', provider_label: 'Ollama' },
-          { label: 'Qwen3 14B', value: 'ollama:qwen3:14b', provider: 'ollama', provider_label: 'Ollama' },
-          { label: 'Llama 3.3 70B', value: 'ollama:llama3.3:70b', provider: 'ollama', provider_label: 'Ollama' },
-          { label: 'Devstral', value: 'ollama:devstral', provider: 'ollama', provider_label: 'Ollama' },
-        ];
-        this.llmModels.set(models);
-        this.llmModelsLoaded.set(true);
+        const models = response.models || [];
+        this.llmModels.set(models.length ? models : [{ label: 'Auto', value: 'auto', available: true }]);
+        if (!this.llmModels().some((model) => model.value === this.selectedModel && model.available)) {
+          this.selectedModel = this.llmModels().find((model) => model.available)?.value || 'auto';
+        }
       },
-      error: () => {
-        const defaults = [
-          { label: 'Qwen3 32B', value: 'ollama:qwen3:32b', provider: 'ollama', provider_label: 'Ollama' },
-          { label: 'Qwen3 14B', value: 'ollama:qwen3:14b', provider: 'ollama', provider_label: 'Ollama' },
-          { label: 'Llama 3.3 70B', value: 'ollama:llama3.3:70b', provider: 'ollama', provider_label: 'Ollama' },
-          { label: 'Devstral', value: 'ollama:devstral', provider: 'ollama', provider_label: 'Ollama' },
-        ];
-        this.llmModels.set(defaults);
-        this.llmModelsLoaded.set(true);
-      },
+      error: () => this.llmModels.set([{ label: 'Auto', value: 'auto', available: true }]),
     });
   }
 
@@ -237,7 +217,10 @@ export class ResumeUploadComponent implements OnInit {
         this.uploading.set(false);
         console.log('Upload response:', response);
         if (response.resume_id) {
-          this.router.navigate(['/resume-generator/review', response.resume_id]);
+          this.router.navigate(
+            ['/resume-generator/review', response.resume_id],
+            { state: { parsedData: response.parsed_data } }
+          );
         } else {
           this.error.set('Invalid response from server. Missing resume_id.');
         }

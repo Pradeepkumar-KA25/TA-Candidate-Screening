@@ -1,13 +1,10 @@
-version: '3.9'
-
 services:
   # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
-    container_name: ta-screening-postgres
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
       POSTGRES_DB: ${DB_NAME:-talent_acquisition}
     ports:
       - "${DB_PORT:-5432}:5432"
@@ -28,7 +25,6 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: ta-screening-backend
     environment:
       # App Configuration
       APP_NAME: ${APP_NAME:-Talent Acquisition API}
@@ -37,19 +33,22 @@ services:
       API_V1_PREFIX: ${API_V1_PREFIX:-/api/v1}
       
       # Database Configuration
-      DATABASE_URL: postgresql+psycopg://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-talent_acquisition}
+      DATABASE_URL: postgresql+psycopg://${DB_USER:-postgres}:${DB_PASSWORD:?DB_PASSWORD is required}@postgres:5432/${DB_NAME:-talent_acquisition}
       
       # CORS Configuration
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200}
+      FRONTEND_CORS_ORIGIN: ${FRONTEND_CORS_ORIGIN:?FRONTEND_CORS_ORIGIN is required}
       
       # JWT Configuration
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-production-please-use-a-long-secret}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?JWT_SECRET_KEY is required}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
       REMEMBER_ME_EXPIRE_DAYS: ${REMEMBER_ME_EXPIRE_DAYS:-7}
       
       # Integration Configuration
-      INTEGRATION_ENCRYPTION_KEY: ${INTEGRATION_ENCRYPTION_KEY:-}
+      INTEGRATION_ENCRYPTION_KEY: ${INTEGRATION_ENCRYPTION_KEY:?INTEGRATION_ENCRYPTION_KEY is required}
+      INITIAL_ADMIN_NAME: ${INITIAL_ADMIN_NAME:-Admin User}
+      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-}
       
       # Zoho Configuration
       ZOHO_ACCOUNTS_BASE_URL: ${ZOHO_ACCOUNTS_BASE_URL:-https://accounts.zoho.com}
@@ -58,20 +57,30 @@ services:
       ZOHO_CLIENT_SECRET: ${ZOHO_CLIENT_SECRET:-}
       ZOHO_CONNECTION_TIMEOUT_SECONDS: ${ZOHO_CONNECTION_TIMEOUT_SECONDS:-30.0}
       ZOHO_SYNC_MAX_RECORDS: ${ZOHO_SYNC_MAX_RECORDS:-200}
-      ZOHO_RESUME_STORAGE_PATH: ${ZOHO_RESUME_STORAGE_PATH:-uploads/resumes}
-      
-      # AI Provider Configuration
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
-      OLLAMA_HOST: ${OLLAMA_HOST:-ollama:11434}
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1}
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
+      LOCAL_STORAGE_ROOT: ${LOCAL_STORAGE_ROOT:-uploads}
+      AZURE_STORAGE_ACCOUNT_URL: ${AZURE_STORAGE_ACCOUNT_URL:-}
+      AZURE_STORAGE_CONTAINER: ${AZURE_STORAGE_CONTAINER:-candidate-files}
+
+      # External Ollama Service
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-}
+      OLLAMA_SECTOR_MODEL: ${OLLAMA_SECTOR_MODEL:-}
+      OLLAMA_MODELS: ${OLLAMA_MODELS:-}
       AI_PROVIDER_PRIORITY: ${AI_PROVIDER_PRIORITY:-ollama}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
-      AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY:-}
-      AZURE_OPENAI_AD_TOKEN: ${AZURE_OPENAI_AD_TOKEN:-}
-      AZURE_OPENAI_API_VERSION: ${AZURE_OPENAI_API_VERSION:-2024-10-21}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OLLAMA_REQUEST_TIMEOUT_SECONDS: ${OLLAMA_REQUEST_TIMEOUT_SECONDS:-90}
+      OLLAMA_UPLOAD_TIMEOUT_SECONDS: ${OLLAMA_UPLOAD_TIMEOUT_SECONDS:-10}
+      OLLAMA_BACKGROUND_CHUNK_TIMEOUT_SECONDS: ${OLLAMA_BACKGROUND_CHUNK_TIMEOUT_SECONDS:-180}
+      OLLAMA_NUM_PREDICT: ${OLLAMA_NUM_PREDICT:-2048}
+      OLLAMA_STAGED_LINE_THRESHOLD: ${OLLAMA_STAGED_LINE_THRESHOLD:-50}
+      OLLAMA_SECTION_CHUNK_LINES: ${OLLAMA_SECTION_CHUNK_LINES:-12}
+      OLLAMA_SECTION_OVERLAP_LINES: ${OLLAMA_SECTION_OVERLAP_LINES:-2}
+      OLLAMA_SECTION_NUM_PREDICT: ${OLLAMA_SECTION_NUM_PREDICT:-512}
+      SECTOR_ENRICHMENT_ENABLED: ${SECTOR_ENRICHMENT_ENABLED:-true}
+      SECTOR_ENRICHMENT_ON_UPLOAD: ${SECTOR_ENRICHMENT_ON_UPLOAD:-false}
+      SECTOR_WEB_CONTEXT_ENABLED: ${SECTOR_WEB_CONTEXT_ENABLED:-true}
+      SECTOR_WEB_TIMEOUT_SECONDS: ${SECTOR_WEB_TIMEOUT_SECONDS:-10}
+      SECTOR_MINIMUM_CONFIDENCE: ${SECTOR_MINIMUM_CONFIDENCE:-0.35}
       
       # Phase 1 Configuration
       REVIEW_BATCH_SIZE: ${REVIEW_BATCH_SIZE:-20}
@@ -100,7 +109,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: ta-screening-frontend
+    environment:
+      PORT: 4200
+      BACKEND_URL: http://backend:8000
     ports:
       - "${FRONTEND_PORT:-4200}:4200"
     
@@ -113,29 +124,6 @@ services:
     
     restart: unless-stopped
 
-  # Ollama LLM Service (for resume enrichment and AI features)
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ta-screening-ollama
-    environment:
-      # Ollama configuration for resource management
-      OLLAMA_NUM_PARALLEL: "2"
-      OLLAMA_NUM_THREAD: "4"
-    ports:
-      - "${OLLAMA_PORT:-11434}:11434"
-    volumes:
-      # Persistent volume for model files
-      - ollama_models:/root/.ollama
-    networks:
-      - ta-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "ollama", "list"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-
 volumes:
   # Named volume for PostgreSQL data persistence
   postgres_data:
@@ -145,10 +133,6 @@ volumes:
   backend_uploads:
     driver: local
   
-  # Named volume for Ollama model files
-  ollama_models:
-    driver: local
-
 networks:
   # Custom bridge network for service communication
   ta-network:

@@ -10,6 +10,7 @@ import { SaveFilterRequest } from '../../models/saved-filter.models';
 import { AuthService } from '../../services/auth.service';
 import { JobDescriptionService } from '../../services/job-description.service';
 import { SavedFilterService } from '../../services/saved-filter.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-filters',
@@ -64,7 +65,8 @@ export class FiltersComponent implements OnInit {
     private readonly router: Router,
     private readonly authService: AuthService,
     private readonly jobDescriptionService: JobDescriptionService,
-    private readonly savedFilterService: SavedFilterService
+    private readonly savedFilterService: SavedFilterService,
+    private readonly notificationService: NotificationService
   ) {}
 
   onLogout(): void {
@@ -119,6 +121,7 @@ export class FiltersComponent implements OnInit {
 
         if (!created) {
           this.jdCreateApiMessage = 'Unable to create JD. Please check JD code uniqueness and try again.';
+          this.notificationService.error(this.jdCreateApiMessage, 'Job description failed');
           return;
         }
 
@@ -126,6 +129,7 @@ export class FiltersComponent implements OnInit {
         this.createJdForm.setValue({ jdCode: '', title: '', requiredSkills: '' });
         this.filterForm.controls.jdId.setValue(created.id);
         this.jdCreateSuccessMessage = `JD ${created.jd_code} created successfully.`;
+        this.notificationService.success(this.jdCreateSuccessMessage, 'Job description created');
       });
   }
 

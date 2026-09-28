@@ -21,7 +21,7 @@ class ProposedFieldChange(Base):
     zoho_field_api_name: Mapped[str] = mapped_column(String(128), nullable=False)  # e.g., "Email", "Phone"
     zoho_field_display_name: Mapped[str] = mapped_column(String(255), nullable=False)  # e.g., "Email Address"
     existing_zoho_value: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # Original Zoho value (for audit)
-    extracted_resume_value: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # What Ollama extracted
+    extracted_resume_value: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     proposed_value: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # What will be sent if approved
     change_status: Mapped[str] = mapped_column(
         String(32), nullable=False, default="PENDING", index=True

@@ -1,17 +1,18 @@
 from __future__ import annotations
 
 from uuid import UUID
-from pathlib import Path
 
 from fastapi import APIRouter, Depends, Path as FastAPIPath, Query, status
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from pydantic import BaseModel
 
-from app.core.dependencies import get_candidate_service, require_roles
+from app.core.dependencies import get_activity_log_repository, get_candidate_service, require_roles
 from app.models.user import User
 from app.schemas.candidates import CandidateDetailResponse, CandidateListResponse
 from app.schemas.errors import ErrorResponse
 from app.services.candidate_service import CandidateService
+from app.storage import StorageBackend, get_storage_backend
+from app.repositories.activity_log_repository import ActivityLogRepository
 
 
 class DeleteCandidatesRequest(BaseModel):
@@ -100,8 +101,9 @@ async def list_candidates(
 )
 async def delete_candidates_batch(
     request: DeleteCandidatesRequest,
-    _: User = Depends(require_roles("Admin")),
+    current_user: User = Depends(require_roles("Admin")),
     candidate_service: CandidateService = Depends(get_candidate_service),
+    activity_log_repository: ActivityLogRepository = Depends(get_activity_log_repository),
 ) -> dict:
     import logging
     from uuid import UUID as UUIDType
@@ -127,6 +129,14 @@ async def delete_candidates_batch(
         return {"message": "No valid candidate IDs provided", "deleted_count": 0}
     
     deleted_count = candidate_service.delete_candidates_batch(candidate_uuid_ids)
+    activity_log_repository.create(
+        actor_id=current_user.id,
+        action_type="candidate_bulk_deleted",
+        description=f"Deleted {deleted_count} candidates",
+        entity_type="candidate",
+        result="success" if deleted_count else "warning",
+        metadata={"requested_count": len(candidate_uuid_ids), "deleted_count": deleted_count},
+    )
     logger.info(f"Batch delete completed. Deleted {deleted_count} candidates")
     return {"message": f"Deleted {deleted_count} candidate(s) successfully", "deleted_count": deleted_count}
 
@@ -167,10 +177,18 @@ async def get_candidate_details(
 )
 async def delete_candidate(
     candidate_id: UUID = FastAPIPath(description="Candidate UUID"),
-    _: User = Depends(require_roles("Admin")),
+    current_user: User = Depends(require_roles("Admin")),
     candidate_service: CandidateService = Depends(get_candidate_service),
+    activity_log_repository: ActivityLogRepository = Depends(get_activity_log_repository),
 ) -> dict:
     candidate_service.delete_candidate(candidate_id)
+    activity_log_repository.create(
+        actor_id=current_user.id,
+        action_type="candidate_deleted",
+        description="Deleted candidate",
+        entity_type="candidate",
+        entity_id=candidate_id,
+    )
     return {"message": "Candidate deleted successfully"}
 
 
@@ -189,7 +207,8 @@ async def get_candidate_resume(
     candidate_id: UUID = FastAPIPath(..., description="Candidate UUID"),
     _: User = Depends(require_roles("Recruiter", "Admin")),
     candidate_service: CandidateService = Depends(get_candidate_service),
-) -> FileResponse:
+    storage: StorageBackend = Depends(get_storage_backend),
+) -> Response:
     """Serve the candidate's resume file."""
     from fastapi import HTTPException
     import logging
@@ -205,40 +224,18 @@ async def get_candidate_resume(
         logger.warning(f"No resume URL for candidate {candidate_id}")
         raise HTTPException(status_code=404, detail="Resume not found for this candidate")
     
-    # Construct absolute file path
-    # The resume_url is relative (e.g., "uploads/resumes/{candidate_id}/resume.pdf")
-    # Make it relative to the current working directory where the backend is running
-    resume_path = Path(candidate.resume_url)
-    logger.info(f"Resume path (relative): {resume_path}")
-    
-    # If not absolute, make it absolute relative to current directory
-    if not resume_path.is_absolute():
-        resume_path = Path.cwd() / resume_path
-        logger.info(f"Resume path (absolute): {resume_path}")
-    
-    if not resume_path.exists():
-        logger.error(f"Resume file not found: {resume_path}")
-        raise HTTPException(status_code=404, detail=f"Resume file not found at {resume_path}")
-    
-    # Verify file is readable and has content
     try:
-        file_size = resume_path.stat().st_size
-        logger.info(f"Resume file size: {file_size} bytes")
-        
-        if file_size == 0:
-            logger.error(f"Resume file is empty: {resume_path}")
+        content = storage.read_bytes(candidate.resume_url)
+        if not content:
             raise HTTPException(status_code=404, detail="Resume file is empty")
-        
-        # Check file signature
-        with open(str(resume_path), 'rb') as f:
-            first_bytes = f.read(20)
-            logger.info(f"File signature (first 20 bytes hex): {first_bytes.hex()}")
-    except OSError as e:
-        logger.error(f"Error accessing resume file: {e}")
-        raise HTTPException(status_code=404, detail=f"Cannot access resume file: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Error reading resume: %s", exc)
+        raise HTTPException(status_code=404, detail="Resume file not found") from exc
     
     # Determine media type based on file extension
-    suffix = resume_path.suffix.lower()
+    suffix = "." + candidate.resume_url.rsplit(".", 1)[-1].lower() if "." in candidate.resume_url else ""
     media_type_map = {
         ".pdf": "application/pdf",
         ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -248,14 +245,9 @@ async def get_candidate_resume(
     
     media_type = media_type_map.get(suffix, "application/octet-stream")
     
-    logger.info(f"Serving resume: {resume_path} with media type: {media_type}")
-    
-    # Return file with appropriate headers for display in iframe
-    return FileResponse(
-        path=str(resume_path),
+    filename = candidate.resume_file_name or f"resume{suffix}"
+    return Response(
+        content=content,
         media_type=media_type,
-        filename=candidate.resume_file_name or f"resume{suffix}",
-        headers={
-            "Content-Disposition": f"inline; filename=\"{candidate.resume_file_name or f'resume{suffix}'}\""
-        }
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
     )

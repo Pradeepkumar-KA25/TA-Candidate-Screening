@@ -11,6 +11,7 @@ import { IntegrationService } from '../../services/integration.service';
 import { JobDescriptionService } from '../../services/job-description.service';
 import { ShortlistListItem, ShortlistService } from '../../services/shortlist.service';
 import { sanitizeCandidateName, sanitizeDisplayText, summarizeSkills } from '../../utils/display-format';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-shortlists',
@@ -37,7 +38,8 @@ export class ShortlistsComponent implements OnInit {
     private readonly jobDescriptionService: JobDescriptionService,
     private readonly shortlistService: ShortlistService,
     private readonly route: ActivatedRoute,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly notificationService: NotificationService
   ) {
     this.integrationService
       .pollZohoStatus()
@@ -91,8 +93,10 @@ export class ShortlistsComponent implements OnInit {
     this.errorMessage = null;
     try {
       await this.shortlistService.downloadShortlistAsExcel(shortlistId).toPromise();
+      this.notificationService.success('The shortlist export is ready.', 'Export complete');
     } catch {
       this.errorMessage = 'Unable to download shortlist right now. Please try again.';
+      this.notificationService.error(this.errorMessage, 'Export failed');
     } finally {
       this.downloadingShortlistId = null;
     }
@@ -120,8 +124,10 @@ export class ShortlistsComponent implements OnInit {
           };
         })
         .filter((shortlist) => shortlist.candidate_count > 0);
+      this.notificationService.success('The candidate was removed from the shortlist.', 'Shortlist updated');
     } catch {
       this.errorMessage = 'Unable to remove candidate from shortlist right now. Please try again.';
+      this.notificationService.error(this.errorMessage, 'Shortlist update failed');
     } finally {
       this.removingCandidateKey = null;
     }
@@ -170,6 +176,7 @@ export class ShortlistsComponent implements OnInit {
           this.shortlists = [];
           this.loading = false;
           this.errorMessage = 'Unable to load shortlists. Please refresh and try again.';
+          this.notificationService.error(this.errorMessage, 'Shortlists unavailable');
         },
       });
   }

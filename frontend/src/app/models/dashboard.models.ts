@@ -14,6 +14,8 @@ export interface DashboardStats {
   pipeline: DashboardCountItem[];
   source_breakdown: DashboardCountItem[];
   needs_attention: DashboardAttentionItem[];
+  resume_enrichment?: DashboardEnrichmentStats;
+  activity_summary?: DashboardCountItem[];
 }
 
 export interface DashboardCountItem {
@@ -30,7 +32,18 @@ export interface DashboardActivityItem {
   actor_id: string | null;
   action_type: string;
   description: string;
+  entity_type?: string | null;
+  entity_id?: string | null;
+  result?: string;
+  metadata?: Record<string, unknown> | null;
   occurred_at: string;
+}
+
+export interface DashboardEnrichmentStats {
+  pending_batches: number;
+  pending_reviews: number;
+  approved_reviews: number;
+  rejected_reviews: number;
 }
 
 export interface DashboardRecentActivityResponse {

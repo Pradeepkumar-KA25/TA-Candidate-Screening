@@ -1,0 +1,35 @@
+<section class="users-page">
+  <div class="page-header">
+    <div><p class="eyebrow">Administration</p><h1>User Management</h1><p class="page-sub">Manage recruiter access, roles, and account status.</p></div>
+    <button class="primary-button" type="button" (click)="showCreate = !showCreate">{{ showCreate ? 'Close' : 'Add User' }}</button>
+  </div>
+
+  <form *ngIf="showCreate" class="create-form" (ngSubmit)="create()">
+    <input name="full_name" [(ngModel)]="form.full_name" placeholder="Full name" required />
+    <input name="email" [(ngModel)]="form.email" type="email" placeholder="Email" required />
+    <input name="password" [(ngModel)]="form.password" type="password" placeholder="Temporary password" minlength="8" required />
+    <select name="role" [(ngModel)]="form.role"><option value="Recruiter">Recruiter</option><option value="Admin">Admin</option></select>
+    <button class="primary-button" type="submit">Create User</button>
+  </form>
+
+  <form *ngIf="editingUser" class="create-form" (ngSubmit)="saveEdit()">
+    <input name="editName" [(ngModel)]="editName" placeholder="Full name" required />
+    <select name="editRole" [(ngModel)]="editRole"><option value="Recruiter">Recruiter</option><option value="Admin">Admin</option></select>
+    <button class="primary-button" type="submit">Save changes</button>
+    <button class="secondary-button" type="button" (click)="editingUser = null">Cancel</button>
+  </form>
+
+  <form *ngIf="resetUser" class="create-form" (ngSubmit)="saveReset()">
+    <input name="resetPassword" [(ngModel)]="resetPassword" type="password" minlength="8" placeholder="New password" required />
+    <button class="primary-button" type="submit">Reset password</button>
+    <button class="secondary-button" type="button" (click)="resetUser = null">Cancel</button>
+  </form>
+
+  <div *ngIf="loading" class="empty-state">Loading users...</div>
+  <div *ngIf="!loading && users.length === 0" class="empty-state">No users found.</div>
+  <div *ngIf="!loading && users.length > 0" class="table-wrap">
+    <table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last login</th><th>Action</th></tr></thead>
+      <tbody><tr *ngFor="let user of users"><td>{{ user.full_name }}</td><td>{{ user.email }}</td><td>{{ user.role }}</td><td><span [class.active-status]="user.is_active">{{ user.is_active ? 'Active' : 'Inactive' }}</span></td><td>{{ user.last_login_at ? (user.last_login_at | date:'medium') : 'Never' }}</td><td class="actions"><button class="secondary-button" type="button" (click)="beginEdit(user)">Edit</button><button class="secondary-button" type="button" (click)="beginReset(user)">Reset password</button><button class="secondary-button" type="button" (click)="toggle(user)">{{ user.is_active ? 'Deactivate' : 'Activate' }}</button></td></tr></tbody>
+    </table>
+  </div>
+</section>

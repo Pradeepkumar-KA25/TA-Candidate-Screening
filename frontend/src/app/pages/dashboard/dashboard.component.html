@@ -30,6 +30,23 @@
       </a>
     </div>
 
+    <section class="analytics-section" *ngIf="analytics as dashboardAnalytics">
+      <div class="analytics-header">
+        <div><h2>Recruitment Analytics</h2><p>Operational trends for the selected reporting window.</p></div>
+        <select [(ngModel)]="analyticsDays" (ngModelChange)="changeAnalyticsRange($event)" aria-label="Analytics date range">
+          <option [ngValue]="7">Last 7 days</option><option [ngValue]="30">Last 30 days</option><option [ngValue]="90">Last 90 days</option>
+        </select>
+      </div>
+      <div class="chart-grid">
+        <article class="panel chart-panel chart-wide"><h3>Candidate Growth</h3><div #growthChart class="chart"></div></article>
+        <article class="panel chart-panel"><h3>Pipeline</h3><div #pipelineChart class="chart"></div></article>
+        <article class="panel chart-panel"><h3>Candidate Sources</h3><div #sourceChart class="chart"></div></article>
+        <article class="panel chart-panel"><h3>Zoho Sync Outcomes</h3><div #syncChart class="chart"></div></article>
+        <article class="panel chart-panel"><h3>Enrichment Outcomes</h3><div #enrichmentChart class="chart"></div></article>
+        <article class="panel chart-panel chart-wide"><h3>Activity by Action</h3><div #activityChart class="chart"></div></article>
+      </div>
+    </section>
+
     <div class="two-col">
       <article class="panel connection-panel">
         <div class="panel-header">
@@ -100,6 +117,27 @@
           <a class="attention-item dashboard-drilldown" *ngFor="let item of dashboardStats.needs_attention" [routerLink]="item.route" [queryParams]="attentionQuery(item.label)"><span>{{ item.label }}</span><strong>{{ item.count | number }}</strong></a>
         </div>
         <ng-template #allClear><div class="activity-empty">No urgent follow-ups right now.</div></ng-template>
+      </article>
+
+      <article class="panel dashboard-panel enrichment-panel">
+        <div class="panel-header">
+          <div><h2>Resume Enrichment</h2><p>Review activity from extracted candidate data.</p></div>
+          <a class="panel-link" routerLink="/resume-enrichment/batches">Open queue</a>
+        </div>
+        <div class="metric-row">
+          <div><span>Pending batches</span><strong>{{ dashboardStats.resume_enrichment?.pending_batches || 0 | number }}</strong></div>
+          <div><span>Pending reviews</span><strong>{{ dashboardStats.resume_enrichment?.pending_reviews || 0 | number }}</strong></div>
+          <div><span>Approved</span><strong>{{ dashboardStats.resume_enrichment?.approved_reviews || 0 | number }}</strong></div>
+          <div><span>Rejected</span><strong>{{ dashboardStats.resume_enrichment?.rejected_reviews || 0 | number }}</strong></div>
+        </div>
+      </article>
+
+      <article class="panel dashboard-panel">
+        <div class="panel-header"><div><h2>Activity Volume</h2><p>Most frequent recorded actions.</p></div><a class="panel-link" routerLink="/audit-logs">Audit log</a></div>
+        <div class="breakdown-list" *ngIf="(dashboardStats.activity_summary?.length || 0) > 0; else noActivitySummary">
+          <div class="breakdown-item" *ngFor="let item of dashboardStats.activity_summary || []"><span>{{ item.label | titlecase }}</span><strong>{{ item.count | number }}</strong></div>
+        </div>
+        <ng-template #noActivitySummary><div class="activity-empty">Activity data will appear as actions are recorded.</div></ng-template>
       </article>
     </div>
 

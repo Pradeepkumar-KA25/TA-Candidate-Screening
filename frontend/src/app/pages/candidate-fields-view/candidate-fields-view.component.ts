@@ -8,6 +8,7 @@ import { CandidateService } from '../../services/candidate.service';
 import { CandidateFieldsService, FieldGroup } from '../../services/candidate-fields.service';
 import { CandidateFieldSectionComponent } from '../../components/candidate-field-section/candidate-field-section.component';
 import { sanitizeCandidateName, sanitizeDisplayText, sanitizeEmailAddress } from '../../utils/display-format';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-candidate-fields-view',
@@ -25,6 +26,7 @@ export class CandidateFieldsViewComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly candidateService = inject(CandidateService);
   private readonly fieldsService = inject(CandidateFieldsService);
+  private readonly notificationService = inject(NotificationService);
 
   candidate: CandidateDetailResponse | null = null;
   fieldGroups: FieldGroup[] = [];
@@ -81,7 +83,7 @@ export class CandidateFieldsViewComponent implements OnInit {
 
   downloadResume(): void {
     if (!this.candidate?.resume_url) {
-      alert('No resume available for this candidate.');
+      this.notificationService.info('No resume is available for this candidate.', 'Resume unavailable');
       return;
     }
 
@@ -98,7 +100,7 @@ export class CandidateFieldsViewComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error fetching resume:', error);
-          alert('Unable to open resume. Please try again.');
+          this.notificationService.error('Unable to open the resume. Please try again.', 'Resume unavailable');
         },
       });
   }

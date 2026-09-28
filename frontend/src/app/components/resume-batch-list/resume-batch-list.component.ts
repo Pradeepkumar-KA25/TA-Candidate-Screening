@@ -7,6 +7,7 @@ import { takeUntil } from 'rxjs/operators';
 
 import { ReviewBatch } from '../../models/resume-enrichment.model';
 import { ResumeEnrichmentService } from '../../services/resume-enrichment.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-resume-batch-list',
@@ -20,7 +21,10 @@ export class ResumeBatchListComponent implements OnInit, OnDestroy {
   loading = false;
   creating = false;
   showBatchSizeDialog = false;
+  showLargeBatchWarning = false;
+  allowLargeBatchCreation = false;
   batchSize = 20;
+  batchSizeError: string | null = null;
   error: string | null = null;
   page = 1;
   pageSize = 10;
@@ -30,7 +34,8 @@ export class ResumeBatchListComponent implements OnInit, OnDestroy {
 
   constructor(
     private resumeEnrichmentService: ResumeEnrichmentService,
-    private router: Router
+    private router: Router,
+    private notificationService: NotificationService,
   ) {}
 
   // Expose Math for template usage
@@ -65,6 +70,7 @@ export class ResumeBatchListComponent implements OnInit, OnDestroy {
           console.error('Error loading batches:', error);
           this.error = 'Failed to load review batches. Please try again.';
           this.loading = false;
+          this.notificationService.error(this.error, 'Resume enrichment');
         },
       });
   }
@@ -76,20 +82,47 @@ export class ResumeBatchListComponent implements OnInit, OnDestroy {
     if (this.creating || this.loading) return;
     this.batchSize = 20;
     this.showBatchSizeDialog = true;
+    this.showLargeBatchWarning = false;
+    this.allowLargeBatchCreation = false;
+    this.batchSizeError = null;
     this.error = null;
   }
 
   cancelBatchCreation(): void {
     if (!this.creating) {
       this.showBatchSizeDialog = false;
+      this.showLargeBatchWarning = false;
+      this.allowLargeBatchCreation = false;
+      this.batchSizeError = null;
     }
   }
 
+  editBatchSize(): void {
+    this.showLargeBatchWarning = false;
+    this.allowLargeBatchCreation = false;
+    this.batchSizeError = null;
+  }
+
+  continueWithLargeBatch(): void {
+    this.showLargeBatchWarning = false;
+    this.allowLargeBatchCreation = true;
+    this.createBatch();
+  }
+
   createBatch(): void {
-    if (this.creating || this.batchSize < 1 || this.batchSize > 1000) return;
+    if (this.creating) return;
+    if (!Number.isInteger(this.batchSize) || this.batchSize < 1 || this.batchSize > 1000) {
+      this.batchSizeError = 'Enter a whole number between 1 and 1000 candidates.';
+      return;
+    }
+    if (this.batchSize > 50 && !this.allowLargeBatchCreation) {
+      this.showLargeBatchWarning = true;
+      return;
+    }
 
     this.creating = true;
     this.showBatchSizeDialog = false;
+    this.allowLargeBatchCreation = false;
     this.error = null;
 
     this.resumeEnrichmentService
@@ -98,6 +131,7 @@ export class ResumeBatchListComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (batch) => {
           this.creating = false;
+          this.notificationService.success(`Batch ${batch.batch_number} was created.`, 'Resume enrichment');
           // Navigate to batch detail
           this.router.navigate(['/resume-enrichment/batches', batch.id]);
         },
@@ -105,6 +139,7 @@ export class ResumeBatchListComponent implements OnInit, OnDestroy {
           console.error('Error creating batch:', error);
           this.error = 'Failed to create review batch. Please try again.';
           this.creating = false;
+          this.notificationService.error(this.error, 'Resume enrichment');
         },
       });
   }

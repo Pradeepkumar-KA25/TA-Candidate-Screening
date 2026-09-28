@@ -4,9 +4,6 @@ from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine, inspect, text
 
-from app.core.security import verify_password
-
-
 def test_users_migration_round_trip(temp_sqlite_path) -> None:
     database_url = f"sqlite+pysqlite:///{temp_sqlite_path}"
     config = Config("alembic.ini")
@@ -20,18 +17,7 @@ def test_users_migration_round_trip(temp_sqlite_path) -> None:
     assert {"id", "full_name", "email", "password_hash", "role", "is_active", "created_at", "updated_at"}.issubset(columns)
 
     with engine.connect() as connection:
-        default_admin = connection.execute(
-            text(
-                "SELECT full_name, password_hash, role, is_active FROM users "
-                "WHERE email = :email"
-            ),
-            {"email": "admin@talent.com"},
-        ).mappings().one()
-
-    assert default_admin["full_name"] == "Admin User"
-    assert default_admin["role"] == "Admin"
-    assert bool(default_admin["is_active"])
-    assert verify_password("Secret123!", default_admin["password_hash"])
+        assert connection.execute(text("SELECT COUNT(*) FROM users")).scalar_one() == 0
 
     integration_columns = {column["name"] for column in inspector.get_columns("integration_settings")}
     assert {

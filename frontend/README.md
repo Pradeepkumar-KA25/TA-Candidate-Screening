@@ -15,6 +15,8 @@ This folder contains the frontend SPA for the Talent Acquisition platform.
 
 The app is configured to run at `http://localhost:4200`.
 
+API calls use the relative `/api/v1` path. During local development `proxy.conf.json` forwards requests to the local backend. In the production container, Nginx reads `PORT` and `BACKEND_URL` at startup and proxies API requests to the configured backend.
+
 ## Auth behavior
 - Protected routes use an `AuthGuard` that redirects unauthenticated users to `/login`.
 - An HTTP auth interceptor attaches `Authorization: Bearer <token>` to API requests.

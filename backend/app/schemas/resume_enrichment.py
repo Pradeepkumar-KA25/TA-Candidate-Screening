@@ -68,6 +68,7 @@ class ReviewBatchDetailResponse(ReviewBatchResponse):
     """Detailed batch response with candidate list."""
 
     candidates: list[CandidateReviewResponse] = Field(default_factory=list)
+    candidate_total: int = 0
 
 
 class CreateReviewBatchRequest(BaseModel):

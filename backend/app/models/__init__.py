@@ -14,3 +14,4 @@ from app.models.kanini_resume_db import (
     KaniniResume,
     KaniniUserTemplate,
 )
+from app.models.company_sector import CompanySector

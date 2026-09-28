@@ -20,17 +20,32 @@ from fastapi import (
 )
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
 
 from app.core.database import get_db_session
 from app.core.dependencies import get_current_recruiter
+from app.core.dependencies import get_activity_log_repository
+from app.repositories.activity_log_repository import ActivityLogRepository
 from app.models.user import User
 from app.repositories.kanini_resume_repository import (
     KaniniResumeRepository,
     KaniniUserTemplateRepository,
 )
-from app.services.kanini_resume_parser import parse_resume
 from app.services.kanini_resume_models import KaniniResumeData
 from app.services.kanini_resume_renderer import KaniniResumeRenderer
+from app.services.ollama_service import get_model_options
+from app.services.resume_ai_pipeline import parse_resume_completely
+from app.services.kanini_resume_parser import parse_resume
+from app.repositories.company_sector_repository import CompanySectorRepository
+from app.services.company_sector_service import CompanySectorService
+from app.core.config import settings
+from app.models.template_spec import TemplateSpec
+from app.services.template_spec_renderer import (
+    render_docx as render_template_spec_docx,
+    render_html as render_template_spec_html,
+    render_pdf as render_template_spec_pdf,
+)
+from app.storage import StorageBackend, get_storage_backend
 
 router = APIRouter(tags=["kanini_resume"])
 
@@ -59,6 +74,7 @@ async def upload_resume(
     llm_model: str = Form(default="auto"),
     current_recruiter: User = Depends(get_current_recruiter),
     db: Session = Depends(get_db_session),
+    activity_log_repository: ActivityLogRepository = Depends(get_activity_log_repository),
 ):
     """Upload and parse a resume (PDF or DOCX)."""
     try:
@@ -70,50 +86,66 @@ async def upload_resume(
         content = await file.read()
         if not content:
             raise HTTPException(status_code=422, detail="Uploaded resume is empty")
+        if len(content) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="File too large (max 10 MB)")
 
         # The parser accepts a path, so use a temporary file and remove it immediately.
         with tempfile.NamedTemporaryFile(suffix=file_ext, delete=False) as temporary_file:
             temporary_file.write(content)
             temporary_path = Path(temporary_file.name)
         try:
-            parsed_data = parse_resume(str(temporary_path), file_ext[1:])
+            parsed_data = await run_in_threadpool(
+                parse_resume,
+                str(temporary_path),
+                file_ext[1:],
+            )
         finally:
             temporary_path.unlink(missing_ok=True)
 
-        # Save to database
+        resume_id = uuid.uuid4()
         repo = KaniniResumeRepository(db)
         resume = repo.create(
+            id=resume_id,
             user_id=current_recruiter.id,
             filename=file.filename,
             parsed_data=parsed_data,
+            extraction_status="completed",
+            extraction_progress=100,
+            extraction_model="deterministic",
+        )
+        activity_log_repository.create(
+            actor_id=current_recruiter.id,
+            action_type="resume_uploaded",
+            description="Uploaded and extracted a resume",
+            entity_type="resume",
+            entity_id=resume.id,
+            metadata={"filename": resume.filename, "extraction_model": "deterministic"},
         )
 
         return {
             "resume_id": str(resume.id),
             "filename": resume.filename,
             "parsed_data": resume.parsed_data,
-            "llm_model": llm_model,
-            "message": "Resume uploaded and parsed successfully",
+            "llm_requested": llm_model,
+            "llm_used": "deterministic",
+            "extraction_status": resume.extraction_status,
+            "extraction_progress": resume.extraction_progress,
+            "message": "Resume uploaded and extracted successfully",
         }
 
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 
 @router.get("/llm-models")
-async def get_llm_models():
-    """Get available LLM models for resume parsing."""
-    return {
-        "models": [
-            {"label": "Auto (default)", "value": "auto", "available": True},
-            {"label": "Qwen3 32B", "value": "ollama:qwen3:32b", "available": True, "provider": "ollama", "provider_label": "Ollama"},
-            {"label": "Qwen3 14B", "value": "ollama:qwen3:14b", "available": True, "provider": "ollama", "provider_label": "Ollama"},
-            {"label": "Llama 3.3 70B", "value": "ollama:llama3.3:70b", "available": True, "provider": "ollama", "provider_label": "Ollama"},
-            {"label": "Devstral", "value": "ollama:devstral", "available": True, "provider": "ollama", "provider_label": "Ollama"},
-            {"label": "Gemma 3 27B", "value": "ollama:gemma3:27b", "available": True, "provider": "ollama", "provider_label": "Ollama"},
-            {"label": "Mistral Small 3.2", "value": "ollama:mistral-small3.2", "available": True, "provider": "ollama", "provider_label": "Ollama"},
-        ]
-    }
+async def get_llm_models(
+    current_recruiter: User = Depends(get_current_recruiter),
+):
+    return {"models": get_model_options()}
 
 
 # ============================================================================
@@ -138,6 +170,8 @@ async def list_resumes(
             {
                 "id": str(resume.id),
                 "filename": resume.filename,
+                "extraction_status": resume.extraction_status,
+                "extraction_progress": resume.extraction_progress,
                 "created_at": resume.created_at.isoformat(),
                 "updated_at": resume.updated_at.isoformat(),
             }
@@ -164,6 +198,14 @@ async def get_resume(
     if not resume:
         raise HTTPException(status_code=404, detail="Resume not found")
 
+    if resume.extraction_status in {"pending", "processing"}:
+        resume = repo.update_extraction(
+            resume.id,
+            status="completed",
+            progress=100,
+            error=None,
+        ) or resume
+
     # Debug logging
     import logging
     logger = logging.getLogger(__name__)
@@ -178,7 +220,57 @@ async def get_resume(
         "id": str(resume.id),
         "filename": resume.filename,
         "parsed_data": resume.parsed_data,
+        "extraction_status": resume.extraction_status,
+        "extraction_progress": resume.extraction_progress,
+        "extraction_error": resume.extraction_error,
+        "extraction_model": resume.extraction_model,
         "created_at": resume.created_at.isoformat(),
+    }
+
+
+@router.post("/resumes/{resume_id}/extract")
+async def retry_resume_extraction(
+    resume_id: str,
+    llm_model: str = Form(default="auto"),
+    current_recruiter: User = Depends(get_current_recruiter),
+    db: Session = Depends(get_db_session),
+    storage: StorageBackend = Depends(get_storage_backend),
+):
+    try:
+        resume_uuid = uuid.UUID(resume_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid resume ID") from exc
+    repository = KaniniResumeRepository(db)
+    resume = repository.get_by_id(resume_uuid, current_recruiter.id)
+    if not resume:
+        raise HTTPException(status_code=404, detail="Resume not found")
+    if not resume.source_reference:
+        raise HTTPException(status_code=409, detail="Uploaded source is no longer available")
+    with storage.materialize(resume.source_reference) as source_path:
+        parsed_data, model_used = await run_in_threadpool(
+            parse_resume_completely,
+            str(source_path),
+            resume.source_file_type,
+            llm_model,
+        )
+    repository.update_extraction(
+        resume.id,
+        status="completed",
+        progress=100,
+        parsed_data=parsed_data,
+        model=model_used,
+        error=None,
+    )
+    storage.delete_prefix(f"resume-jobs/{resume.id}")
+    resume.source_reference = None
+    resume.source_file_type = None
+    db.commit()
+    return {
+        "resume_id": resume_id,
+        "parsed_data": parsed_data,
+        "extraction_status": "completed",
+        "extraction_progress": 100,
+        "extraction_model": model_used,
     }
 
 
@@ -218,6 +310,8 @@ async def delete_resume(
     resume_id: str,
     current_recruiter: User = Depends(get_current_recruiter),
     db: Session = Depends(get_db_session),
+    storage: StorageBackend = Depends(get_storage_backend),
+    activity_log_repository: ActivityLogRepository = Depends(get_activity_log_repository),
 ):
     """Delete a resume."""
     try:
@@ -226,8 +320,19 @@ async def delete_resume(
         raise HTTPException(status_code=400, detail="Invalid resume ID")
 
     repo = KaniniResumeRepository(db)
+    resume = repo.get_by_id(resume_uuid, current_recruiter.id)
+    if resume and resume.source_reference:
+        storage.delete_prefix(f"resume-jobs/{resume_uuid}")
     if not repo.delete(resume_uuid, current_recruiter.id):
         raise HTTPException(status_code=404, detail="Resume not found")
+
+    activity_log_repository.create(
+        actor_id=current_recruiter.id,
+        action_type="resume_deleted",
+        description="Deleted generated resume",
+        entity_type="resume",
+        entity_id=resume_uuid,
+    )
 
     return {"message": "Resume deleted successfully"}
 
@@ -318,6 +423,7 @@ async def render_resume(
     format: str = Form("html"),  # 'html', 'docx', 'pdf'
     current_recruiter: User = Depends(get_current_recruiter),
     db: Session = Depends(get_db_session),
+    activity_log_repository: ActivityLogRepository = Depends(get_activity_log_repository),
 ):
     """Render resume in specified template and format."""
     import logging
@@ -352,7 +458,25 @@ async def render_resume(
 
         # Render in memory. Generated downloads are not retained on the server.
         try:
-            if format == "html":
+            user_template = None
+            if template_id not in BUILTIN_TEMPLATES:
+                try:
+                    user_template = KaniniUserTemplateRepository(db).get_by_id(
+                        uuid.UUID(template_id), current_recruiter.id
+                    )
+                except ValueError:
+                    pass
+                if not user_template:
+                    raise HTTPException(status_code=404, detail="Template not found")
+            template_spec = TemplateSpec.model_validate(user_template.template_spec) if user_template else None
+
+            if template_spec and format == "html":
+                content = render_template_spec_html(resume.parsed_data, template_spec).encode("utf-8")
+            elif template_spec and format == "docx":
+                content = render_template_spec_docx(resume.parsed_data, template_spec)
+            elif template_spec and format == "pdf":
+                content = render_template_spec_pdf(resume.parsed_data, template_spec)
+            elif format == "html":
                 content = KaniniResumeRenderer.render_html(resume.parsed_data, template_id)
                 if not isinstance(content, str):
                     raise ValueError(f"Expected HTML string, got {type(content)}")
@@ -384,6 +508,14 @@ async def render_resume(
             "pdf": "application/pdf",
         }
         filename = f"{candidate_name_clean}_KANINI_Format_{format_num}.{format}"
+        activity_log_repository.create(
+            actor_id=current_recruiter.id,
+            action_type="resume_rendered",
+            description=f"Rendered resume as {format.upper()}",
+            entity_type="resume",
+            entity_id=resume_uuid,
+            metadata={"template_id": template_id, "format": format},
+        )
         return Response(
             content=content,
             media_type=media_types[format],
@@ -417,8 +549,20 @@ async def preview_resume(
     if not resume:
         raise HTTPException(status_code=404, detail="Resume not found")
 
-    # Render HTML preview
-    html_content = KaniniResumeRenderer.render_html(resume.parsed_data, template_id)
+    if template_id in BUILTIN_TEMPLATES:
+        html_content = KaniniResumeRenderer.render_html(resume.parsed_data, template_id)
+    else:
+        try:
+            template_uuid = uuid.UUID(template_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="Invalid template ID") from exc
+        template = KaniniUserTemplateRepository(db).get_by_id(template_uuid, current_recruiter.id)
+        if not template:
+            raise HTTPException(status_code=404, detail="Template not found")
+        html_content = render_template_spec_html(
+            resume.parsed_data,
+            TemplateSpec.model_validate(template.template_spec),
+        )
     
     return {
         "resume_id": resume_id,

@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Path, status
 
 from app.core.dependencies import (
+    get_activity_log_repository,
     get_ranking_service,
     require_roles,
 )
@@ -19,6 +20,7 @@ from app.services.ranking_service import (
     RankingCandidateNotFoundError,
     RankingService,
 )
+from app.repositories.activity_log_repository import ActivityLogRepository
 
 
 ranking_router = APIRouter()
@@ -45,8 +47,9 @@ async def get_ranked_candidates(
     experience_min: Annotated[float | None, Query(ge=0, description="Minimum years of experience")] = None,
     experience_max: Annotated[float | None, Query(ge=0, description="Maximum years of experience")] = None,
     notice_period_max: Annotated[int | None, Query(ge=0, description="Maximum notice period in days")] = None,
-    _: User = Depends(require_roles("Recruiter", "Admin")),
+    current_user: User = Depends(require_roles("Recruiter", "Admin")),
     service: RankingService = Depends(get_ranking_service),
+    activity_log_repository: ActivityLogRepository = Depends(get_activity_log_repository),
 ) -> RankingResponse:
     """Get ranked candidates for a job description.
     
@@ -69,7 +72,16 @@ async def get_ranked_candidates(
     )
 
     try:
-        return service.rank_candidates(jd_id, filter_criteria)
+        response = service.rank_candidates(jd_id, filter_criteria)
+        activity_log_repository.create(
+            actor_id=current_user.id,
+            action_type="ranking_executed",
+            description="Ranked candidates for a job description",
+            entity_type="job_description",
+            entity_id=jd_id,
+            metadata={"candidate_count": len(response.ranked_candidates)},
+        )
+        return response
     except RankingJDNotFoundError as e:
         raise e
     except RankingNoCriteriaError as e:

@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, catchError, finalize, forkJoin, map, of, tap } from 'rxjs';
 
 import { DashboardActivityItem, DashboardOverview, DashboardRecentActivityResponse, DashboardStats } from '../models/dashboard.models';
+import { DashboardAnalytics } from '../models/analytics.models';
 import { ApiConfigService } from '../config/api.config';
 
 @Injectable({
@@ -66,6 +67,13 @@ export class DashboardService {
           pipeline: [],
           source_breakdown: [],
           needs_attention: [],
+          resume_enrichment: {
+            pending_batches: 0,
+            pending_reviews: 0,
+            approved_reviews: 0,
+            rejected_reviews: 0,
+          },
+          activity_summary: [],
         });
       })
     );
@@ -80,5 +88,11 @@ export class DashboardService {
         return of({ items: [] });
       })
     );
+  }
+
+  getAnalytics(days = 7): Observable<DashboardAnalytics> {
+    return this.httpClient.get<DashboardAnalytics>(`${this.apiBaseUrl}/dashboard/analytics`, {
+      params: { days: String(days) },
+    });
   }
 }

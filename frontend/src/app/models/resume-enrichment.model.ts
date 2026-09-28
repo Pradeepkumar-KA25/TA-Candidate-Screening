@@ -45,6 +45,7 @@ export interface ReviewBatch {
 
 export interface ReviewBatchDetail extends ReviewBatch {
   candidates: CandidateReview[];
+  candidate_total: number;
 }
 
 export interface ReviewBatchListResponse {

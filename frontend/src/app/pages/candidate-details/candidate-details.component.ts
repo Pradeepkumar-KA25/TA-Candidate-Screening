@@ -10,6 +10,7 @@ import { ZohoIntegrationStatus } from '../../models/integration.models';
 import { CandidateService } from '../../services/candidate.service';
 import { IntegrationService } from '../../services/integration.service';
 import { sanitizeCandidateName, sanitizeDisplayText, sanitizeEmailAddress } from '../../utils/display-format';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-candidate-details',
@@ -34,7 +35,8 @@ export class CandidateDetailsComponent implements OnInit {
     private readonly candidateService: CandidateService,
     private readonly integrationService: IntegrationService,
     private readonly authService: AuthService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly notificationService: NotificationService
   ) {
     this.integrationService
       .pollZohoStatus()
@@ -109,6 +111,7 @@ export class CandidateDetailsComponent implements OnInit {
       .deleteCandidate(this.candidate.id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
+        this.notificationService.success('The candidate was deleted.', 'Candidate deleted');
         this.router.navigate(['/candidates']);
       });
   }

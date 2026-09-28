@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.auth import auth_router
+from app.api.audit import audit_router
 from app.api.candidates import candidate_router
 from app.api.dashboard import dashboard_router
 from app.api.duplicates import duplicate_router
@@ -13,10 +14,12 @@ from app.api.saved_filters import saved_filter_router
 from app.api.shortlists import shortlist_router
 from app.api.sync import sync_router
 from app.api.templates import router as templates_router
+from app.api.users import users_router
 
 api_router = APIRouter()
 
 api_router.include_router(auth_router, prefix="/auth", tags=["Auth"])
+api_router.include_router(audit_router)
 api_router.include_router(candidate_router, prefix="/candidates", tags=["Candidates"])
 api_router.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard"])
 api_router.include_router(duplicate_router, prefix="/duplicates", tags=["Duplicates"])
@@ -29,6 +32,7 @@ api_router.include_router(saved_filter_router, prefix="/saved-filters", tags=["S
 api_router.include_router(shortlist_router, prefix="/shortlists", tags=["Shortlists"])
 api_router.include_router(sync_router, prefix="/sync", tags=["Sync"])
 api_router.include_router(templates_router, prefix="/templates", tags=["Templates"])
+api_router.include_router(users_router)
 
 
 @api_router.get("/status", tags=["Status"])

@@ -20,13 +20,47 @@ class KaniniResumeRepository:
         user_id: uuid.UUID,
         filename: str,
         parsed_data: dict,
+        **extraction_fields,
     ) -> KaniniResume:
         resume = KaniniResume(
             user_id=user_id,
             filename=filename,
             parsed_data=parsed_data,
+            **extraction_fields,
         )
         self.db.add(resume)
+        self.db.commit()
+        self.db.refresh(resume)
+        return resume
+
+    def get_job(self, resume_id: uuid.UUID) -> Optional[KaniniResume]:
+        return self.db.query(KaniniResume).filter(KaniniResume.id == resume_id).first()
+
+    def list_unfinished_jobs(self) -> List[KaniniResume]:
+        return self.db.query(KaniniResume).filter(
+            KaniniResume.extraction_status.in_(["pending", "processing"])
+        ).all()
+
+    def update_extraction(
+        self,
+        resume_id: uuid.UUID,
+        *,
+        status: str,
+        progress: int,
+        parsed_data: dict | None = None,
+        model: str | None = None,
+        error: str | None = None,
+    ) -> Optional[KaniniResume]:
+        resume = self.get_job(resume_id)
+        if not resume:
+            return None
+        resume.extraction_status = status
+        resume.extraction_progress = max(0, min(100, progress))
+        resume.extraction_error = error
+        if parsed_data is not None:
+            resume.parsed_data = parsed_data
+        if model is not None:
+            resume.extraction_model = model
         self.db.commit()
         self.db.refresh(resume)
         return resume
@@ -47,6 +81,9 @@ class KaniniResumeRepository:
         if not resume:
             return None
         resume.parsed_data = parsed_data
+        resume.extraction_status = "completed"
+        resume.extraction_progress = 100
+        resume.extraction_error = None
         self.db.commit()
         self.db.refresh(resume)
         return resume
