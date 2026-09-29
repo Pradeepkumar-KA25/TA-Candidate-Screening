@@ -30,6 +30,66 @@
   }
 }
 
+.preview-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.preview-note {
+  color: #667085;
+  font-size: 13px;
+}
+
+.write-back-preview {
+  margin-bottom: 24px;
+  padding: 16px;
+  border: 1px solid #b8d8c0;
+  border-radius: 8px;
+  background: #f3fbf5;
+
+  .preview-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    h2 {
+      margin: 0;
+      font-size: 18px;
+      color: #1f5130;
+    }
+  }
+
+  .preview-safe {
+    color: #1f5130;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  pre {
+    max-height: 280px;
+    margin: 16px 0 0;
+    padding: 12px;
+    overflow: auto;
+    border: 1px solid #d8eadc;
+    border-radius: 4px;
+    background: white;
+    color: #344054;
+    font-size: 12px;
+    white-space: pre-wrap;
+  }
+
+  .preview-skipped {
+    margin-top: 16px;
+    color: #7a4b00;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+}
+
 .candidate-info {
   display: flex;
   align-items: center;

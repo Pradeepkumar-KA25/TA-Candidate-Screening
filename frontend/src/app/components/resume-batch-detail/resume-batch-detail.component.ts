@@ -19,6 +19,7 @@ export class ResumeBatchDetailComponent implements OnInit, OnDestroy {
   batch: ReviewBatchDetail | null = null;
   loading = false;
   error: string | null = null;
+  showDeleteConfirmation = false;
   page = 1;
   pageSize = 20;
   total = 0;
@@ -186,14 +187,8 @@ export class ResumeBatchDetailComponent implements OnInit, OnDestroy {
   deleteBatch(): void {
     if (!this.batch) return;
 
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete batch "${this.batch.batch_number}"? ` +
-      'This will delete all candidate reviews and proposed changes. This action cannot be undone.'
-    );
-
-    if (!confirmDelete) return;
-
     this.loading = true;
+    this.showDeleteConfirmation = false;
     this.error = null;
 
     this.resumeEnrichmentService
@@ -213,5 +208,11 @@ export class ResumeBatchDetailComponent implements OnInit, OnDestroy {
           this.notificationService.error(this.error, 'Resume enrichment');
         },
       });
+  }
+
+  cancelDelete(): void {
+    if (!this.loading) {
+      this.showDeleteConfirmation = false;
+    }
   }
 }

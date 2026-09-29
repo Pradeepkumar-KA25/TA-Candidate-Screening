@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID
 
@@ -15,7 +15,9 @@ from app.repositories.candidate_review_repository import CandidateReviewReposito
 from app.repositories.proposed_field_change_repository import ProposedFieldChangeRepository
 from app.repositories.review_batch_repository import ReviewBatchRepository
 from app.repositories.activity_log_repository import ActivityLogRepository
+from app.repositories.zoho_field_metadata_repository import ZohoFieldMetadataRepository
 from app.services.resume_fetch_service import ResumeFetchService
+from app.services.integration_service import IntegrationService
 
 logger = logging.getLogger("resume_enrichment")
 
@@ -26,19 +28,45 @@ class ResumeEnrichmentError(Exception):
     pass
 
 
+class ResumeEnrichmentWriteBackDisabledError(ResumeEnrichmentError):
+    """Raised when a write-back operation is requested while writes are disabled."""
+
+    pass
+
+
 class ResumeEnrichmentService:
     """Service for Phase 1: Resume extraction, comparison, and review batch management."""
 
-    # Field mapping: Zoho field name → (Resume extraction data path, Display name)
-    FIELD_MAPPING = {
-        "Email": ("email", "contact.email", "Email Address"),
-        "Phone": ("phone", "contact.phone", "Phone Number"),
-        "Designation": ("title", "experience[0].title", "Designation / Job Title"),
-        "Current_Company": ("company", "experience[0].company", "Current Company"),
-        "Degree": ("degree", "education[0].degree", "Degree"),
-        "Institution": ("institution", "education[0].institution", "Institution / University"),
-        "Skills": ("skills", "skills", "Technical Skills"),
-        "Summary": ("summary", "summary", "Professional Summary"),
+    # Resume sources are stable; Zoho field names are resolved from each raw payload.
+    RESUME_FIELD_MAPPING = {
+        "email": ("contact.email", "Email Address", ("Email", "Email_Optional")),
+        "phone": ("contact.phone", "Phone Number", ("Phone", "Mobile")),
+        "designation": (
+            "experience[0].title",
+            "Designation / Job Title",
+            ("Designation", "Job_Title_as_per_KANINI", "Job_Title_as_per_Kanini_Function", "Job_Role_as_per_Kanini", "Final_Job_Role"),
+        ),
+        "current_company": (
+            "experience[0].company",
+            "Current Company",
+            ("Current_Employer", "Employer_Details", "Current_Company"),
+        ),
+        "degree": (
+            "education[0].degree",
+            "Degree",
+            ("Highest_Qualification", "Highest_Qualification_Held", "Degree", "Education"),
+        ),
+        "institution": (
+            "education[0].institution",
+            "Institution / University",
+            ("Institution", "University", "Institute"),
+        ),
+        "skills": ("skills", "Technical Skills", ("Skill_Set", "Skills")),
+        "summary": (
+            "summary",
+            "Professional Summary",
+            ("Summary", "Professional_Summary", "Profile_Summary"),
+        ),
     }
 
     def __init__(
@@ -50,6 +78,8 @@ class ResumeEnrichmentService:
         zoho_recruit_client: ZohoRecruitClient,
         resume_fetch_service: ResumeFetchService,
         activity_log_repository: ActivityLogRepository | None = None,
+        zoho_field_metadata_repository: ZohoFieldMetadataRepository | None = None,
+        integration_service: IntegrationService | None = None,
     ):
         self.review_batch_repository = review_batch_repository
         self.candidate_review_repository = candidate_review_repository
@@ -58,6 +88,8 @@ class ResumeEnrichmentService:
         self.zoho_recruit_client = zoho_recruit_client
         self.resume_fetch_service = resume_fetch_service
         self.activity_log_repository = activity_log_repository
+        self.zoho_field_metadata_repository = zoho_field_metadata_repository
+        self.integration_service = integration_service
 
     def create_review_batch(
         self, batch_size: int | None = None, access_token: str | None = None, created_by_user_id: UUID | None = None
@@ -120,10 +152,11 @@ class ResumeEnrichmentService:
             # Process each candidate
             successful_count = 0
             error_count = 0
+            writable_fields = self._get_writable_fields(access_token)
 
             for candidate in candidates_to_review:
                 try:
-                    self._process_candidate(batch.id, candidate, access_token)
+                    self._process_candidate(batch.id, candidate, access_token, writable_fields)
                     successful_count += 1
                 except Exception as exc:
                     logger.error(f"Error processing candidate {candidate.full_name} ({candidate.id}): {str(exc)}")
@@ -265,9 +298,143 @@ class ResumeEnrichmentService:
         )
         return count
 
+    def prepare_approved_write_back(self, candidate_review_id: UUID) -> dict[str, Any]:
+        """Build, but never send, the payload for approved candidate changes.
+
+        This is intentionally preparation-only. It performs no Zoho write request.
+        """
+        candidate_review = self.candidate_review_repository.get_by_id(candidate_review_id)
+        if candidate_review is None:
+            raise ResumeEnrichmentError(f"Candidate review {candidate_review_id} not found")
+
+        candidate = self.candidate_repository.get_by_id(candidate_review.candidate_id)
+        if candidate is None:
+            raise ResumeEnrichmentError(f"Candidate {candidate_review.candidate_id} not found")
+
+        approved_changes = self.proposed_field_change_repository.get_by_candidate_review_id_and_status(
+            candidate_review_id, "APPROVED"
+        )
+        writable_fields = self._get_writable_fields(None)
+        payload, skipped = self._build_candidate_update_payload(
+            raw_payload=self._get_zoho_candidate_data(candidate),
+            approved_changes=approved_changes,
+            writable_fields=writable_fields,
+        )
+
+        return {
+            "candidate_review_id": str(candidate_review_id),
+            "zoho_record_id": candidate.zoho_record_id,
+            "payload": payload,
+            "skipped": skipped,
+            "sent_to_zoho": False,
+        }
+
+    def send_approved_changes(self, candidate_review_id: UUID) -> dict[str, Any]:
+        """Send approved changes only when write-back is explicitly enabled.
+
+        With the default safety setting this method returns without making any
+        external request, which keeps development and test environments read-only.
+        """
+        preview = self.prepare_approved_write_back(candidate_review_id)
+        candidate_review = self.candidate_review_repository.get_by_id(candidate_review_id)
+        live_preview = self._prepare_live_write_back(candidate_review_id, preview)
+        if not settings.zoho_write_enabled:
+            if candidate_review:
+                candidate_review.write_back_status = "DISABLED"
+                candidate_review.write_back_error = "Zoho write-back is disabled"
+                candidate_review.write_back_at = datetime.now(timezone.utc)
+                self.review_batch_repository.session.flush()
+            self._log_activity(
+                actor_id=None,
+                action_type="resume_enrichment_write_back_blocked",
+                description="Write-back request blocked because Zoho writes are disabled",
+                entity_type="candidate_review",
+                entity_id=candidate_review_id,
+                result="warning",
+            )
+            return {
+                **live_preview,
+                "status": "WRITE_BACK_DISABLED",
+                "sent_to_zoho": False,
+            }
+
+        if not live_preview["payload"]:
+            return {**preview, "status": "NO_WRITABLE_CHANGES"}
+        if self.integration_service is None:
+            raise ResumeEnrichmentError("Zoho integration service is not configured")
+
+        token = self.integration_service.get_active_access_token()
+        if token is None:
+            raise ResumeEnrichmentError("Zoho access token is unavailable")
+
+        result = self.zoho_recruit_client.update_candidate(
+            access_token=token,
+            candidate_id=live_preview["zoho_record_id"],
+            fields=live_preview["payload"],
+        )
+        return {**live_preview, "status": "SENT", "sent_to_zoho": True, "zoho_response": result}
+
+    def _prepare_live_write_back(
+        self, candidate_review_id: UUID, preview: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Re-fetch Zoho data and rebuild the payload immediately before sending."""
+        if self.integration_service is None:
+            raise ResumeEnrichmentError("Zoho integration service is not configured")
+        token = self.integration_service.get_active_access_token()
+        if token is None:
+            raise ResumeEnrichmentError("Zoho access token is unavailable")
+
+        live_payload = self.zoho_recruit_client.fetch_candidate(token, preview["zoho_record_id"])
+        approved_changes = self.proposed_field_change_repository.get_by_candidate_review_id_and_status(
+            candidate_review_id, "APPROVED"
+        )
+        writable_fields = self._get_writable_fields(token)
+        payload, skipped = self._build_candidate_update_payload(
+            raw_payload=live_payload,
+            approved_changes=approved_changes,
+            writable_fields=writable_fields,
+        )
+        return {**preview, "payload": payload, "skipped": skipped}
+
+    @classmethod
+    def _build_candidate_update_payload(
+        cls,
+        *,
+        raw_payload: dict[str, Any],
+        approved_changes: list[Any],
+        writable_fields: set[str] | None,
+    ) -> tuple[dict[str, Any], list[dict[str, str]]]:
+        """Build a guarded update payload without performing network I/O."""
+        payload: dict[str, Any] = {}
+        skipped: list[dict[str, str]] = []
+
+        for change in approved_changes:
+            field_name = change.zoho_field_api_name
+            if writable_fields is not None and field_name not in writable_fields:
+                skipped.append({"field": field_name, "reason": "field_not_writable"})
+                continue
+            if field_name not in raw_payload:
+                skipped.append({"field": field_name, "reason": "field_not_in_raw_payload"})
+                continue
+            if cls._has_value(raw_payload[field_name]):
+                skipped.append({"field": field_name, "reason": "zoho_field_no_longer_empty"})
+                continue
+            if not cls._has_value(change.proposed_value):
+                skipped.append({"field": field_name, "reason": "approved_value_empty"})
+                continue
+            payload[field_name] = change.proposed_value
+
+        return payload, skipped
+
     # Private helper methods
 
-    def _process_candidate(self, batch_id: UUID, candidate: Candidate, access_token: str | None = None) -> None:
+    def _process_candidate(
+        self,
+        batch_id: UUID,
+        candidate: Candidate,
+        access_token: str | None = None,
+        writable_fields: set[str] | None = None,
+    ) -> None:
         """
         Process a single candidate:
         1. Create candidate_review record
@@ -303,8 +470,14 @@ class ResumeEnrichmentService:
         zoho_candidate_data = self._get_zoho_candidate_data(candidate)
 
         # Compare values and create proposed changes
-        for zoho_field_name, (_, extracted_field_path, display_name) in self.FIELD_MAPPING.items():
-            existing_zoho_value = zoho_candidate_data.get(zoho_field_name)
+        for _, (extracted_field_path, display_name, zoho_aliases) in self.RESUME_FIELD_MAPPING.items():
+            resolved_field = self._resolve_zoho_field(zoho_candidate_data, zoho_aliases)
+            if resolved_field is None:
+                continue
+
+            zoho_field_name, existing_zoho_value = resolved_field
+            if writable_fields is not None and zoho_field_name not in writable_fields:
+                continue
             extracted_value = self._get_extracted_value(extracted_data, extracted_field_path)
 
             # Apply business rule: only propose change if Zoho is empty and resume has value
@@ -344,17 +517,71 @@ class ResumeEnrichmentService:
             raise ResumeEnrichmentError(f"Resume extraction failed: {str(exc)}") from exc
 
     def _get_zoho_candidate_data(self, candidate: Candidate) -> dict[str, Any]:
-        """Get candidate's current Zoho data (from local candidate record)."""
+        """Return all fields captured in the synchronized Zoho payload."""
+        return dict(candidate.raw_payload) if isinstance(candidate.raw_payload, dict) else {}
+
+    def _get_writable_fields(self, access_token: str | None) -> set[str] | None:
+        """Load writable Zoho fields from fresh or cached metadata."""
+        repository = self.zoho_field_metadata_repository
+        if repository is None:
+            return None
+
+        provider = "zoho_recruit"
+        module = "Candidates"
+        if not repository.is_fresh(provider, module, timedelta(hours=24)):
+            token = access_token
+            if token is None and self.integration_service is not None:
+                token = self.integration_service.get_active_access_token()
+            if token is None:
+                logger.warning("Zoho metadata unavailable; skipping enrichment proposals")
+                return set()
+
+            metadata = self.zoho_recruit_client.fetch_candidate_field_metadata(token)
+            repository.replace_fields(
+                provider,
+                module,
+                [
+                    {
+                        "api_name": item.api_name,
+                        "display_label": item.display_label,
+                        "data_type": item.data_type,
+                        "read_only": item.read_only,
+                        "raw_metadata": item.raw_metadata or {},
+                    }
+                    for item in metadata
+                ],
+            )
+
+        unsupported_types = {"autonumber", "formula", "lookup", "owner", "subform"}
         return {
-            "Email": candidate.email,
-            "Phone": candidate.phone,
-            "Designation": candidate.raw_payload.get("Designation") if candidate.raw_payload else None,
-            "Current_Company": candidate.current_company,
-            "Degree": candidate.degree,
-            "Institution": candidate.raw_payload.get("Institution") if candidate.raw_payload else None,
-            "Skills": candidate.skills,
-            "Summary": candidate.raw_payload.get("Summary") if candidate.raw_payload else None,
+            field.api_name
+            for field in repository.list_fields(provider, module)
+            if not field.read_only and field.data_type.lower() not in unsupported_types
         }
+
+    @staticmethod
+    def _resolve_zoho_field(
+        raw_payload: dict[str, Any], aliases: tuple[str, ...]
+    ) -> tuple[str, Any] | None:
+        """Resolve a resume concept to an existing field in the raw Zoho payload."""
+        for alias in aliases:
+            if alias in raw_payload:
+                return alias, raw_payload[alias]
+
+        normalized_payload = {
+            ResumeEnrichmentService._normalize_field_name(key): key for key in raw_payload
+        }
+        for alias in aliases:
+            payload_key = normalized_payload.get(ResumeEnrichmentService._normalize_field_name(alias))
+            if payload_key is not None:
+                return payload_key, raw_payload[payload_key]
+
+        return None
+
+    @staticmethod
+    def _normalize_field_name(value: str) -> str:
+        """Normalize API-name spelling for case and separator differences."""
+        return "".join(character.lower() for character in value if character.isalnum())
 
     def _get_extracted_value(self, extracted_data: dict[str, Any], field_path: str) -> Any:
         """Get nested values using dot notation and zero-based list notation."""
@@ -391,19 +618,8 @@ class ResumeEnrichmentService:
                 "proposed_change": extracted_value or None
             }
         """
-        # Check if Zoho value is real (not None, empty string, or whitespace)
-        zoho_has_value = (
-            zoho_value is not None 
-            and zoho_value != "" 
-            and str(zoho_value).strip() != ""
-        )
-        
-        # Check if extracted value is real
-        extracted_has_value = (
-            extracted_value is not None 
-            and extracted_value != "" 
-            and str(extracted_value).strip() != ""
-        )
+        zoho_has_value = self._has_value(zoho_value)
+        extracted_has_value = self._has_value(extracted_value)
 
         # Zoho has existing value → NEVER create proposed change
         if zoho_has_value:
@@ -430,6 +646,17 @@ class ResumeEnrichmentService:
             "extracted_value": None,
             "proposed_change": None,
         }
+
+    @staticmethod
+    def _has_value(value: Any) -> bool:
+        """Return whether a value contains meaningful data for enrichment."""
+        if value is None:
+            return False
+        if isinstance(value, str):
+            return bool(value.strip())
+        if isinstance(value, (list, dict, tuple, set)):
+            return bool(value)
+        return True
 
     def delete_review_batch(self, batch_id: UUID) -> bool:
         """Delete a review batch and all related records (candidate reviews, proposed changes)."""

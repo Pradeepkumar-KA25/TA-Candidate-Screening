@@ -19,6 +19,9 @@ class ProposedFieldChangeResponse(BaseModel):
     extracted_resume_value: Union[str, dict] | None = None
     proposed_value: Union[str, dict] | None = None
     change_status: str  # PENDING, APPROVED, REJECTED
+    sync_status: str = "NOT_SENT"
+    sync_error: str | None = None
+    synced_at: datetime | None = None
     field_approval_notes: str | None = None
     created_at: datetime
     updated_at: datetime
@@ -34,6 +37,9 @@ class CandidateReviewResponse(BaseModel):
     candidate_id: UUID
     candidate_name: str
     approval_status: str  # PENDING, APPROVED, REJECTED
+    write_back_status: str = "NOT_SENT"
+    write_back_error: str | None = None
+    write_back_at: datetime | None = None
     approval_notes: str | None = None
     reviewed_by_user_id: UUID | None = None
     reviewed_at: datetime | None = None

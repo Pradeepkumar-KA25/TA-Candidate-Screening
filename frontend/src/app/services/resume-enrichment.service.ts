@@ -9,6 +9,7 @@ import {
   ReviewBatch,
   ReviewBatchDetail,
   ReviewBatchListResponse,
+  WriteBackPreview,
 } from '../models/resume-enrichment.model';
 import { ApiConfigService } from '../config/api.config';
 
@@ -72,6 +73,20 @@ export class ResumeEnrichmentService {
    */
   getCandidateReview(candidateReviewId: string): Observable<CandidateReview> {
     return this.http.get<CandidateReview>(`${this.apiBaseUrl}/resume-enrichment/candidates/${candidateReviewId}`);
+  }
+
+  /** Build a local preview; this does not send anything to Zoho. */
+  previewApprovedChanges(candidateReviewId: string): Observable<WriteBackPreview> {
+    return this.http.get<WriteBackPreview>(
+      `${this.apiBaseUrl}/resume-enrichment/candidates/${candidateReviewId}/write-back-preview`
+    );
+  }
+
+  sendApprovedChanges(candidateReviewId: string): Observable<Record<string, unknown>> {
+    return this.http.post<Record<string, unknown>>(
+      `${this.apiBaseUrl}/resume-enrichment/candidates/${candidateReviewId}/write-back`,
+      {}
+    );
   }
 
   /**

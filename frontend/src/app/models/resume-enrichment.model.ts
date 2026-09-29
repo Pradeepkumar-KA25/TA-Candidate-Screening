@@ -6,6 +6,9 @@ export interface ProposedFieldChange {
   extracted_resume_value: Record<string, unknown> | string | null;
   proposed_value: Record<string, unknown> | string | null;
   change_status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  sync_status: 'NOT_SENT' | 'SKIPPED' | 'SYNCED' | 'FAILED';
+  sync_error: string | null;
+  synced_at: string | null;
   field_approval_notes: string | null;
   created_at: string;
   updated_at: string;
@@ -17,6 +20,9 @@ export interface CandidateReview {
   candidate_id: string;
   candidate_name: string;
   approval_status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  write_back_status: 'NOT_SENT' | 'VALIDATED' | 'DISABLED' | 'SYNCED' | 'FAILED';
+  write_back_error: string | null;
+  write_back_at: string | null;
   approval_notes: string | null;
   reviewed_by_user_id: string | null;
   reviewed_at: string | null;
@@ -60,4 +66,12 @@ export interface CandidateReviewListResponse {
   total: number;
   page: number;
   page_size: number;
+}
+
+export interface WriteBackPreview {
+  candidate_review_id: string;
+  zoho_record_id: string;
+  payload: Record<string, unknown>;
+  skipped: Array<{ field: string; reason: string }>;
+  sent_to_zoho: false;
 }

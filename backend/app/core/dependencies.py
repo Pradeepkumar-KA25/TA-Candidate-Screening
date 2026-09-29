@@ -20,6 +20,7 @@ from app.repositories.integration_settings_repository import IntegrationSettings
 from app.repositories.job_description_repository import JobDescriptionRepository
 from app.repositories.normalization_rule_repository import NormalizationRuleRepository
 from app.repositories.proposed_field_change_repository import ProposedFieldChangeRepository
+from app.repositories.zoho_field_metadata_repository import ZohoFieldMetadataRepository
 from app.repositories.ranking_criteria_repository import RankingCriteriaRepository
 from app.repositories.review_batch_repository import ReviewBatchRepository
 from app.repositories.saved_filter_repository import SavedFilterRepository
@@ -277,6 +278,12 @@ def get_proposed_field_change_repository(
     return ProposedFieldChangeRepository(session)
 
 
+def get_zoho_field_metadata_repository(
+    session: Session = Depends(get_db_session),
+) -> ZohoFieldMetadataRepository:
+    return ZohoFieldMetadataRepository(session)
+
+
 def get_resume_fetch_service(
     candidate_repository: CandidateRepository = Depends(get_candidate_repository),
     zoho_recruit_client: ZohoRecruitClient = Depends(get_zoho_recruit_client),
@@ -299,6 +306,8 @@ def get_resume_enrichment_service(
     zoho_recruit_client: ZohoRecruitClient = Depends(get_zoho_recruit_client),
     resume_fetch_service: ResumeFetchService = Depends(get_resume_fetch_service),
     activity_log_repository: ActivityLogRepository = Depends(get_activity_log_repository),
+    zoho_field_metadata_repository: ZohoFieldMetadataRepository = Depends(get_zoho_field_metadata_repository),
+    integration_service: IntegrationService = Depends(get_integration_service),
 ) -> ResumeEnrichmentService:
     return ResumeEnrichmentService(
         review_batch_repository=review_batch_repository,
@@ -308,6 +317,8 @@ def get_resume_enrichment_service(
         zoho_recruit_client=zoho_recruit_client,
         resume_fetch_service=resume_fetch_service,
         activity_log_repository=activity_log_repository,
+        zoho_field_metadata_repository=zoho_field_metadata_repository,
+        integration_service=integration_service,
     )
 
 

@@ -45,6 +45,46 @@
   }
 }
 
+.delete-confirmation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 24px;
+  padding: 16px 18px;
+  border: 1px solid #f0ad4e;
+  border-radius: 8px;
+  background: #fff8e6;
+  color: #6b4f00;
+
+  strong {
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
+}
+
+.delete-confirmation-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .delete-confirmation {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .delete-confirmation-actions {
+    justify-content: flex-end;
+  }
+}
+
 .btn-back {
   margin-bottom: 0;
 }

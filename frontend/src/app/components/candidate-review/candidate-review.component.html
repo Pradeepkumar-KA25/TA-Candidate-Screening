@@ -48,6 +48,40 @@
       </div>
     </div>
 
+    <div class="preview-toolbar">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="previewApprovedChanges()"
+        [disabled]="previewLoading || submitting || writeBackLoading"
+      >
+        {{ previewLoading ? 'Preparing Preview...' : 'Preview Zoho Payload' }}
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="sendApprovedChanges()"
+        [disabled]="writeBackLoading || submitting || getApprovedChanges().length === 0"
+      >
+        {{ writeBackLoading ? 'Processing...' : 'Send Approved to Zoho' }}
+      </button>
+      <span class="preview-note">Write-back is disabled. No data will be sent to Zoho.</span>
+    </div>
+
+    <div *ngIf="writeBackPreview" class="write-back-preview" role="status">
+      <div class="preview-heading">
+        <h2>Zoho Payload Preview</h2>
+        <span class="preview-safe">Not sent to Zoho</span>
+      </div>
+      <pre>{{ writeBackPreview.payload | json }}</pre>
+      <div *ngIf="writeBackPreview.skipped.length > 0" class="preview-skipped">
+        <strong>Skipped fields</strong>
+        <div *ngFor="let item of writeBackPreview.skipped">
+          {{ item.field }}: {{ item.reason }}
+        </div>
+      </div>
+    </div>
+
     <!-- No Changes State -->
     <div *ngIf="candidateReview.proposed_changes.length === 0" class="empty-state">
       <p>No proposed field changes for this candidate.</p>

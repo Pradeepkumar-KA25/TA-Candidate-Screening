@@ -108,6 +108,11 @@ class IntegrationService:
             live_sample_error=live_sample_error,
         )
 
+    def get_active_access_token(self) -> str | None:
+        """Return a usable Zoho access token, refreshing it when necessary."""
+        record = self.repository.get_or_create(self.provider_name)
+        return self._ensure_active_zoho_token(record)
+
     def _ensure_active_zoho_token(self, record) -> str | None:
         now = datetime.now(UTC)
 

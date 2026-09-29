@@ -7,6 +7,7 @@ from app.integrations.zoho_recruit import (
     ZohoRecruitClient,
     ZohoRecruitPermanentError,
     ZohoRecruitTransientError,
+    ZohoRecruitWriteDisabledError,
 )
 
 
@@ -87,3 +88,11 @@ def test_fetch_candidates_raises_after_retries(monkeypatch) -> None:
 
     with pytest.raises(ZohoRecruitTransientError):
         client._fetch_candidates_page_with_retry(access_token='token', page=1, per_page=200)
+
+
+def test_update_candidate_is_blocked_when_write_back_disabled(monkeypatch) -> None:
+    monkeypatch.setattr('app.integrations.zoho_recruit.settings.zoho_write_enabled', False)
+    client = ZohoRecruitClient()
+
+    with pytest.raises(ZohoRecruitWriteDisabledError):
+        client.update_candidate('token', 'candidate-1', {'Phone': '+1 555 0100'})

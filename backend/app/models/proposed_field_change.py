@@ -26,6 +26,11 @@ class ProposedFieldChange(Base):
     change_status: Mapped[str] = mapped_column(
         String(32), nullable=False, default="PENDING", index=True
     )  # PENDING, APPROVED, REJECTED
+    sync_status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="NOT_SENT", index=True
+    )  # NOT_SENT, SKIPPED, SYNCED, FAILED
+    sync_error: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     field_approval_notes: Mapped[str | None] = mapped_column(String(512), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(

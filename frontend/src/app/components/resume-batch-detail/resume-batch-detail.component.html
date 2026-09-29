@@ -6,12 +6,27 @@
     </button>
     <button
       class="btn btn-danger"
-      (click)="deleteBatch()"
-      [disabled]="loading || !batch"
+      (click)="showDeleteConfirmation = true"
+      [disabled]="loading || !batch || showDeleteConfirmation"
       title="Delete this batch and all related reviews"
     >
       🗑️ Delete Batch
     </button>
+  </div>
+
+  <div *ngIf="showDeleteConfirmation && batch" class="delete-confirmation" role="alert">
+    <div>
+      <strong>Delete {{ batch.batch_number }}?</strong>
+      <p>This will delete all candidate reviews and proposed changes. This action cannot be undone.</p>
+    </div>
+    <div class="delete-confirmation-actions">
+      <button type="button" class="btn btn-secondary" (click)="cancelDelete()" [disabled]="loading">
+        Cancel
+      </button>
+      <button type="button" class="btn btn-danger" (click)="deleteBatch()" [disabled]="loading">
+        {{ loading ? 'Deleting...' : 'Delete' }}
+      </button>
+    </div>
   </div>
 
   <!-- Error Message -->

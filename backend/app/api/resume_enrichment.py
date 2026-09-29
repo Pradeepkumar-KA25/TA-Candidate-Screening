@@ -23,6 +23,7 @@ from app.schemas.resume_enrichment import (
     ReviewBatchResponse,
 )
 from app.services.resume_enrichment_service import ResumeEnrichmentService
+from app.services.resume_enrichment_service import ResumeEnrichmentError
 from app.repositories.activity_log_repository import ActivityLogRepository
 
 router = APIRouter(prefix="/resume-enrichment", tags=["resume-enrichment"])
@@ -240,6 +241,40 @@ def get_candidate_review_details(
         **candidate_review.__dict__,
         proposed_changes=[ProposedFieldChangeResponse.model_validate(change) for change in proposed_changes],
     )
+
+
+@router.get(
+    "/candidates/{candidate_review_id}/write-back-preview",
+    summary="Preview approved Zoho changes",
+    description="Build a local preview of approved changes without sending anything to Zoho Recruit.",
+)
+def preview_approved_changes(
+    candidate_review_id: UUID,
+    service: ResumeEnrichmentService = Depends(get_resume_enrichment_service),
+    current_user: User = Depends(require_roles("Recruiter", "Admin")),
+) -> dict:
+    """Return the locally prepared payload; this endpoint never calls a Zoho write API."""
+    try:
+        return service.prepare_approved_write_back(candidate_review_id)
+    except ResumeEnrichmentError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.post(
+    "/candidates/{candidate_review_id}/write-back",
+    summary="Send approved candidate changes to Zoho",
+    description="Send approved changes only when Zoho write-back is explicitly enabled.",
+)
+def send_approved_candidate_changes(
+    candidate_review_id: UUID,
+    service: ResumeEnrichmentService = Depends(get_resume_enrichment_service),
+    current_user: User = Depends(require_roles("Recruiter", "Admin")),
+) -> dict:
+    """Trigger guarded candidate write-back; disabled in the current environment."""
+    try:
+        return service.send_approved_changes(candidate_review_id)
+    except ResumeEnrichmentError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
 
 @router.patch(
