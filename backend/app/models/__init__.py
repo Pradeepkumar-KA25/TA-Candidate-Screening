@@ -15,3 +15,4 @@ from app.models.kanini_resume_db import (
     KaniniUserTemplate,
 )
 from app.models.company_sector import CompanySector
+from app.models.zoho_field_metadata import ZohoFieldMetadataRecord

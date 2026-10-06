@@ -5,7 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
-import { CandidateReview, ProposedFieldChange } from '../../models/resume-enrichment.model';
+import { CandidateReview, ProposedFieldChange, WriteBackPreview } from '../../models/resume-enrichment.model';
 import { ResumeEnrichmentService } from '../../services/resume-enrichment.service';
 import { NotificationService } from '../../services/notification.service';
 
@@ -30,6 +30,9 @@ export class CandidateReviewComponent implements OnInit, OnDestroy {
   bulkActionNotes = '';
   selectedAction: 'approve' | 'reject' | null = null;
   showBulkActionForm = false;
+  writeBackPreview: WriteBackPreview | null = null;
+  previewLoading = false;
+  writeBackLoading = false;
 
   private destroy$ = new Subject<void>();
 
@@ -365,5 +368,53 @@ export class CandidateReviewComponent implements OnInit, OnDestroy {
    */
   isFieldSelected(fieldId: string): boolean {
     return this.selectedFieldIds.has(fieldId);
+  }
+
+  previewApprovedChanges(): void {
+    if (!this.candidateReviewId) return;
+
+    this.previewLoading = true;
+    this.error = null;
+    this.resumeEnrichmentService
+      .previewApprovedChanges(this.candidateReviewId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (preview) => {
+          this.writeBackPreview = preview;
+          this.previewLoading = false;
+        },
+        error: (error) => {
+          console.error('Error preparing write-back preview:', error);
+          this.error = 'Failed to prepare the Zoho payload preview.';
+          this.previewLoading = false;
+        },
+      });
+  }
+
+  sendApprovedChanges(): void {
+    if (!this.candidateReviewId) return;
+
+    this.writeBackLoading = true;
+    this.error = null;
+    this.resumeEnrichmentService
+      .sendApprovedChanges(this.candidateReviewId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.writeBackLoading = false;
+          const status = String(response['status'] || 'completed');
+          if (status === 'WRITE_BACK_DISABLED') {
+            this.notificationService.info('Zoho write-back is disabled. No data was sent.', 'Write-back disabled');
+            return;
+          }
+          this.notificationService.success('Approved changes were sent to Zoho.', 'Write-back complete');
+        },
+        error: (error) => {
+          console.error('Error sending approved changes:', error);
+          this.writeBackLoading = false;
+          this.error = 'Failed to process the Zoho write-back request.';
+          this.notificationService.error(this.error, 'Write-back failed');
+        },
+      });
   }
 }

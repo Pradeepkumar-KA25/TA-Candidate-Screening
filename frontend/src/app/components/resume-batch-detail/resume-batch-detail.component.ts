@@ -19,10 +19,12 @@ export class ResumeBatchDetailComponent implements OnInit, OnDestroy {
   batch: ReviewBatchDetail | null = null;
   loading = false;
   error: string | null = null;
+  showDeleteConfirmation = false;
   page = 1;
   pageSize = 20;
   total = 0;
   batchId: string | null = null;
+  batchWriteBackLoading = false;
 
   private destroy$ = new Subject<void>();
 
@@ -131,6 +133,13 @@ export class ResumeBatchDetailComponent implements OnInit, OnDestroy {
     return this.batch.candidates.filter((c) => c.approval_status === 'APPROVED').length;
   }
 
+  getSendableCount(): number {
+    if (!this.batch) return 0;
+    return this.batch.candidates.filter((candidate) =>
+      candidate.proposed_changes.some((change) => change.change_status === 'APPROVED')
+    ).length;
+  }
+
   /**
    * Get rejected count.
    */
@@ -186,14 +195,8 @@ export class ResumeBatchDetailComponent implements OnInit, OnDestroy {
   deleteBatch(): void {
     if (!this.batch) return;
 
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete batch "${this.batch.batch_number}"? ` +
-      'This will delete all candidate reviews and proposed changes. This action cannot be undone.'
-    );
-
-    if (!confirmDelete) return;
-
     this.loading = true;
+    this.showDeleteConfirmation = false;
     this.error = null;
 
     this.resumeEnrichmentService
@@ -211,6 +214,36 @@ export class ResumeBatchDetailComponent implements OnInit, OnDestroy {
           this.error = 'Failed to delete batch. Please try again.';
           this.loading = false;
           this.notificationService.error(this.error, 'Resume enrichment');
+        },
+      });
+  }
+
+  cancelDelete(): void {
+    if (!this.loading) {
+      this.showDeleteConfirmation = false;
+    }
+  }
+
+  sendApprovedBatch(): void {
+    if (!this.batch || this.batchWriteBackLoading) return;
+
+    this.batchWriteBackLoading = true;
+    this.resumeEnrichmentService
+      .sendApprovedBatch(this.batch.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.batchWriteBackLoading = false;
+          if (response['sent_to_zoho'] === false) {
+            this.notificationService.info('Zoho write-back is disabled. No candidate data was sent.', 'Batch write-back disabled');
+          } else {
+            this.notificationService.success('Approved batch changes were processed.', 'Batch write-back');
+          }
+        },
+        error: (error) => {
+          console.error('Error processing approved batch:', error);
+          this.batchWriteBackLoading = false;
+          this.notificationService.error('Failed to process approved batch changes.', 'Batch write-back');
         },
       });
   }

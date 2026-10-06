@@ -21,6 +21,10 @@ class ZohoRecruitPermanentError(ZohoRecruitClientError):
     pass
 
 
+class ZohoRecruitWriteDisabledError(ZohoRecruitClientError):
+    pass
+
+
 @dataclass(slots=True)
 class ZohoCandidatesPage:
     candidates: list[dict]
@@ -32,6 +36,8 @@ class ZohoFieldMetadata:
     api_name: str
     display_label: str
     data_type: str
+    read_only: bool = False
+    raw_metadata: dict | None = None
 
 
 class ZohoRecruitClient:
@@ -99,6 +105,24 @@ class ZohoRecruitClient:
         candidates = [item for item in data if isinstance(item, dict)]
         return ZohoCandidatesPage(candidates=candidates, has_more=more_records)
 
+    def fetch_candidate(self, access_token: str, candidate_id: str) -> dict:
+        """Fetch one current candidate record using a read-only request."""
+        headers = {"Authorization": f"Zoho-oauthtoken {access_token}"}
+        endpoint = f"{self._base_url}/Candidates/{candidate_id}"
+        response = self._send_get(endpoint=endpoint, headers=headers, params={})
+        if response.status_code in {429, 500, 502, 503, 504}:
+            raise ZohoRecruitTransientError(f"Zoho candidate fetch transient error: HTTP {response.status_code}")
+        if response.status_code >= 400:
+            raise ZohoRecruitPermanentError(f"Zoho candidate fetch error: HTTP {response.status_code}")
+        try:
+            payload = response.json()
+        except ValueError as exc:
+            raise ZohoRecruitPermanentError("Zoho candidate fetch returned non-JSON response") from exc
+        data = payload.get("data")
+        if not isinstance(data, list) or not data or not isinstance(data[0], dict):
+            raise ZohoRecruitPermanentError("Zoho candidate response missing data record")
+        return data[0]
+
     def fetch_candidate_field_metadata(self, access_token: str) -> list[ZohoFieldMetadata]:
         headers = {"Authorization": f"Zoho-oauthtoken {access_token}"}
         endpoint = f"{self._base_url}/settings/fields"
@@ -134,6 +158,8 @@ class ZohoRecruitClient:
                     api_name=api_name.strip(),
                     display_label=str(label).strip(),
                     data_type=str(data_type).strip(),
+                    read_only=bool(item.get("read_only") or item.get("field_read_only")),
+                    raw_metadata=item,
                 )
             )
 
@@ -301,6 +327,42 @@ class ZohoRecruitClient:
             error_msg = f"Could not download attachment. Last error: {last_error}. If you're seeing permission errors, your Zoho admin may need to grant file download permissions to the connected app."
         logger.error(error_msg)
         raise ZohoRecruitPermanentError(error_msg)
+
+    def update_candidate(self, access_token: str, candidate_id: str, fields: dict) -> dict:
+        """Update a Zoho candidate only when write access is explicitly enabled."""
+        if not settings.zoho_write_enabled:
+            raise ZohoRecruitWriteDisabledError(
+                "Zoho candidate write-back is disabled by ZOHO_WRITE_ENABLED"
+            )
+        if not fields:
+            return {"data": []}
+
+        endpoint = f"{self._base_url}/Candidates/{candidate_id}"
+        headers = {
+            "Authorization": f"Zoho-oauthtoken {access_token}",
+            "Content-Type": "application/json",
+        }
+        payload = {"data": [fields]}
+        try:
+            if self._client is not None:
+                response = self._client.put(endpoint, headers=headers, json=payload)
+            else:
+                with httpx.Client(timeout=settings.zoho_connection_timeout_seconds) as client:
+                    response = client.put(endpoint, headers=headers, json=payload)
+        except httpx.TimeoutException as exc:
+            raise ZohoRecruitTransientError("Zoho candidate update timed out") from exc
+        except httpx.HTTPError as exc:
+            raise ZohoRecruitTransientError("Zoho candidate update failed") from exc
+
+        if response.status_code in {429, 500, 502, 503, 504}:
+            raise ZohoRecruitTransientError(f"Zoho candidate update transient error: HTTP {response.status_code}")
+        if response.status_code >= 400:
+            raise ZohoRecruitPermanentError(f"Zoho candidate update error: HTTP {response.status_code}")
+        try:
+            result = response.json()
+        except ValueError as exc:
+            raise ZohoRecruitPermanentError("Zoho candidate update returned non-JSON response") from exc
+        return result if isinstance(result, dict) else {"data": result}
 
     def _send_get(self, *, endpoint: str, headers: dict[str, str], params: dict[str, str | int]) -> httpx.Response:
         try:

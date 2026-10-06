@@ -15,3 +15,14 @@ export interface AutoSyncSettings {
   auto_sync_enabled: boolean;
   auto_sync_interval_minutes: number;
 }
+
+export interface ZohoCredentials {
+  access_token: string;
+  refresh_token: string;
+}
+
+export interface ZohoCredentialsResponse {
+  access_token_configured: boolean;
+  refresh_token_configured: boolean;
+  updated_at: string;
+}

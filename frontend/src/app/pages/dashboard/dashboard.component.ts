@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { AfterViewInit, Component, DestroyRef, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -10,16 +9,15 @@ import { DashboardService } from '../../services/dashboard.service';
 import { IntegrationService } from '../../services/integration.service';
 import { ZohoIntegrationStatus } from '../../models/integration.models';
 import { NotificationService } from '../../services/notification.service';
-import { DashboardAnalytics } from '../../models/analytics.models';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, RouterLink],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
-export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
+export class DashboardComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   stats: DashboardStats | null = null;
@@ -27,15 +25,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   loading = false;
   errorMessage: string | null = null;
   zohoStatus: ZohoIntegrationStatus | null = null;
-  analytics: DashboardAnalytics | null = null;
-  analyticsDays = 7;
-  private charts: Array<{ dispose: () => void }> = [];
-  @ViewChild('growthChart') growthChart?: ElementRef<HTMLDivElement>;
-  @ViewChild('pipelineChart') pipelineChart?: ElementRef<HTMLDivElement>;
-  @ViewChild('sourceChart') sourceChart?: ElementRef<HTMLDivElement>;
-  @ViewChild('syncChart') syncChart?: ElementRef<HTMLDivElement>;
-  @ViewChild('enrichmentChart') enrichmentChart?: ElementRef<HTMLDivElement>;
-  @ViewChild('activityChart') activityChart?: ElementRef<HTMLDivElement>;
 
   constructor(
     private readonly authService: AuthService,
@@ -63,80 +52,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadDashboardOverview(8);
-    this.loadAnalytics();
-  }
-
-  ngAfterViewInit(): void {
-    if (this.analytics) void this.renderCharts();
-  }
-
-  ngOnDestroy(): void {
-    this.charts.forEach((chart) => chart.dispose());
-  }
-
-  loadAnalytics(): void {
-    this.dashboardService.getAnalytics(this.analyticsDays).subscribe({
-      next: (analytics) => {
-        this.analytics = analytics;
-        setTimeout(() => void this.renderCharts());
-      },
-      error: () => this.notificationService.error('Unable to load dashboard analytics.', 'Analytics unavailable'),
-    });
-  }
-
-  changeAnalyticsRange(days: number): void {
-    this.analyticsDays = days;
-    this.loadAnalytics();
-  }
-
-  private async renderCharts(): Promise<void> {
-    if (!this.analytics) return;
-    const [echarts, chartTypes, components, renderers] = await Promise.all([
-      import('echarts/core'),
-      import('echarts/charts'),
-      import('echarts/components'),
-      import('echarts/renderers'),
-    ]);
-    echarts.use([
-      chartTypes.BarChart,
-      chartTypes.LineChart,
-      chartTypes.PieChart,
-      components.GridComponent,
-      components.TooltipComponent,
-      renderers.CanvasRenderer,
-    ]);
-    this.charts.forEach((chart) => chart.dispose());
-    this.charts = [];
-    if (this.growthChart) {
-      const chart = echarts.init(this.growthChart.nativeElement);
-      chart.setOption({ tooltip: { trigger: 'axis' }, xAxis: { type: 'category', data: this.analytics.candidate_growth.map((item) => item.label) }, yAxis: { type: 'value' }, series: [{ type: 'line', smooth: true, data: this.analytics.candidate_growth.map((item) => item.value), areaStyle: {} }] });
-      this.charts.push(chart);
-    }
-    if (this.pipelineChart) {
-      const chart = echarts.init(this.pipelineChart.nativeElement);
-      chart.setOption({ tooltip: {}, xAxis: { type: 'category', data: this.analytics.pipeline.map((item) => item.label) }, yAxis: { type: 'value' }, series: [{ type: 'bar', data: this.analytics.pipeline.map((item) => item.value), itemStyle: { color: '#1d4ed8' } }] });
-      this.charts.push(chart);
-    }
-    if (this.sourceChart) {
-      const chart = echarts.init(this.sourceChart.nativeElement);
-      chart.setOption({ tooltip: { trigger: 'item' }, series: [{ type: 'pie', radius: ['42%', '72%'], data: this.analytics.sources.map((item) => ({ name: item.label, value: item.value })) }] });
-      this.charts.push(chart);
-    }
-    if (this.syncChart) {
-      const chart = echarts.init(this.syncChart.nativeElement);
-      chart.setOption({ tooltip: {}, xAxis: { type: 'category', data: this.analytics.sync_outcomes.map((item) => item.label) }, yAxis: { type: 'value' }, series: [{ type: 'bar', data: this.analytics.sync_outcomes.map((item) => item.value), itemStyle: { color: '#0f766e' } }] });
-      this.charts.push(chart);
-    }
-    if (this.enrichmentChart) {
-      const chart = echarts.init(this.enrichmentChart.nativeElement);
-      chart.setOption({ tooltip: { trigger: 'item' }, series: [{ type: 'pie', radius: ['42%', '72%'], data: this.analytics.enrichment_outcomes.map((item) => ({ name: item.label, value: item.value })) }] });
-      this.charts.push(chart);
-    }
-    if (this.activityChart) {
-      const chart = echarts.init(this.activityChart.nativeElement);
-      chart.setOption({ tooltip: {}, grid: { left: 120, right: 20 }, xAxis: { type: 'value' }, yAxis: { type: 'category', data: this.analytics.activity_by_action.map((item) => item.label).reverse() }, series: [{ type: 'bar', data: this.analytics.activity_by_action.map((item) => item.value).reverse(), itemStyle: { color: '#b45309' } }] });
-      this.charts.push(chart);
-    }
   }
 
   loadDashboardOverview(limit: number): void {

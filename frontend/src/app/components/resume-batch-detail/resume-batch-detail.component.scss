@@ -45,6 +45,46 @@
   }
 }
 
+.delete-confirmation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 24px;
+  padding: 16px 18px;
+  border: 1px solid #f0ad4e;
+  border-radius: 8px;
+  background: #fff8e6;
+  color: #6b4f00;
+
+  strong {
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
+}
+
+.delete-confirmation-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .delete-confirmation {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .delete-confirmation-actions {
+    justify-content: flex-end;
+  }
+}
+
 .btn-back {
   margin-bottom: 0;
 }
@@ -410,4 +450,41 @@
   text-align: center;
   padding: 40px;
   color: #666;
+}
+
+:host-context(body[data-theme='dark']) {
+  .batch-detail-container { background-color: var(--page-bg); color: var(--slate-900); }
+  .batch-detail-content,
+  .table-responsive,
+  .pagination-container { background-color: var(--surface); color: var(--slate-900); }
+  .batch-title h1,
+  .candidates-section h2,
+  .progress-section label { color: var(--slate-900); }
+  .stat-card,
+  .batch-meta,
+  .empty-state { background-color: var(--surface-strong); border-color: var(--slate-200); }
+  .stat-card .stat-label,
+  .batch-meta .meta-item strong,
+  .progress-text,
+  .pagination-container .pagination-info,
+  .loading-container { color: var(--slate-600); }
+  .stat-card .stat-value,
+  .batch-meta .meta-item span,
+  .table tbody tr td { color: var(--slate-900); }
+  .batch-meta .meta-item .error-text { color: var(--red-600); }
+  .progress-bar-large { background-color: var(--slate-200); }
+  .table thead { background-color: var(--surface-strong); border-bottom-color: var(--slate-200); }
+  .table thead th { color: var(--slate-600); }
+  .table tbody tr { border-bottom-color: var(--slate-200); }
+  .table tbody tr:hover { background-color: var(--surface-strong); }
+  .delete-confirmation { background-color: rgba(242, 184, 75, 0.1); border-color: rgba(242, 184, 75, 0.45); color: var(--amber-600); }
+  .empty-state { color: var(--slate-400); }
+  .badge.status-pending,
+  .badge.status-processing,
+  .badge.status-warning,
+  .badge.approval-pending { background-color: rgba(242, 184, 75, 0.16); color: var(--amber-600); }
+  .badge.status-completed,
+  .badge.approval-approved { background-color: rgba(61, 213, 152, 0.16); color: var(--green-600); }
+  .badge.status-failed,
+  .badge.approval-rejected { background-color: rgba(255, 107, 107, 0.16); color: var(--red-600); }
 }
