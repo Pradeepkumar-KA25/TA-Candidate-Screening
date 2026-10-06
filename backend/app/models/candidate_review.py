@@ -21,10 +21,10 @@ class CandidateReview(Base):
     candidate_name: Mapped[str] = mapped_column(String(255), nullable=False)  # Denormalized for convenience
     approval_status: Mapped[str] = mapped_column(
         String(32), nullable=False, default="PENDING", index=True
-    )  # PENDING, APPROVED, REJECTED
+    )  # PENDING, PARTIALLY_APPROVED, APPROVED, REJECTED
     write_back_status: Mapped[str] = mapped_column(
         String(32), nullable=False, default="NOT_SENT", index=True
-    )  # NOT_SENT, VALIDATED, DISABLED, SYNCED, FAILED
+    )  # NOT_SENT, READY_TO_SEND, DISABLED, SYNCED, FAILED
     write_back_error: Mapped[str | None] = mapped_column(String(512), nullable=True)
     write_back_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     approval_notes: Mapped[str | None] = mapped_column(String(512), nullable=True)

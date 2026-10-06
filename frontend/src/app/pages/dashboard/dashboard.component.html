@@ -30,23 +30,6 @@
       </a>
     </div>
 
-    <section class="analytics-section" *ngIf="analytics as dashboardAnalytics">
-      <div class="analytics-header">
-        <div><h2>Recruitment Analytics</h2><p>Operational trends for the selected reporting window.</p></div>
-        <select [(ngModel)]="analyticsDays" (ngModelChange)="changeAnalyticsRange($event)" aria-label="Analytics date range">
-          <option [ngValue]="7">Last 7 days</option><option [ngValue]="30">Last 30 days</option><option [ngValue]="90">Last 90 days</option>
-        </select>
-      </div>
-      <div class="chart-grid">
-        <article class="panel chart-panel chart-wide"><h3>Candidate Growth</h3><div #growthChart class="chart"></div></article>
-        <article class="panel chart-panel"><h3>Pipeline</h3><div #pipelineChart class="chart"></div></article>
-        <article class="panel chart-panel"><h3>Candidate Sources</h3><div #sourceChart class="chart"></div></article>
-        <article class="panel chart-panel"><h3>Zoho Sync Outcomes</h3><div #syncChart class="chart"></div></article>
-        <article class="panel chart-panel"><h3>Enrichment Outcomes</h3><div #enrichmentChart class="chart"></div></article>
-        <article class="panel chart-panel chart-wide"><h3>Activity by Action</h3><div #activityChart class="chart"></div></article>
-      </div>
-    </section>
-
     <div class="two-col">
       <article class="panel connection-panel">
         <div class="panel-header">

@@ -24,6 +24,7 @@ export class ResumeBatchDetailComponent implements OnInit, OnDestroy {
   pageSize = 20;
   total = 0;
   batchId: string | null = null;
+  batchWriteBackLoading = false;
 
   private destroy$ = new Subject<void>();
 
@@ -132,6 +133,13 @@ export class ResumeBatchDetailComponent implements OnInit, OnDestroy {
     return this.batch.candidates.filter((c) => c.approval_status === 'APPROVED').length;
   }
 
+  getSendableCount(): number {
+    if (!this.batch) return 0;
+    return this.batch.candidates.filter((candidate) =>
+      candidate.proposed_changes.some((change) => change.change_status === 'APPROVED')
+    ).length;
+  }
+
   /**
    * Get rejected count.
    */
@@ -214,5 +222,29 @@ export class ResumeBatchDetailComponent implements OnInit, OnDestroy {
     if (!this.loading) {
       this.showDeleteConfirmation = false;
     }
+  }
+
+  sendApprovedBatch(): void {
+    if (!this.batch || this.batchWriteBackLoading) return;
+
+    this.batchWriteBackLoading = true;
+    this.resumeEnrichmentService
+      .sendApprovedBatch(this.batch.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.batchWriteBackLoading = false;
+          if (response['sent_to_zoho'] === false) {
+            this.notificationService.info('Zoho write-back is disabled. No candidate data was sent.', 'Batch write-back disabled');
+          } else {
+            this.notificationService.success('Approved batch changes were processed.', 'Batch write-back');
+          }
+        },
+        error: (error) => {
+          console.error('Error processing approved batch:', error);
+          this.batchWriteBackLoading = false;
+          this.notificationService.error('Failed to process approved batch changes.', 'Batch write-back');
+        },
+      });
   }
 }

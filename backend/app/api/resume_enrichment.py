@@ -205,6 +205,22 @@ def delete_review_batch(
         ) from exc
 
 
+@router.post(
+    "/batches/{batch_id}/write-back",
+    summary="Process approved batch changes",
+    description="Process approved reviews through the guarded write-back flow; disabled Zoho writes remain local only.",
+)
+def send_approved_batch_changes(
+    batch_id: UUID,
+    service: ResumeEnrichmentService = Depends(get_resume_enrichment_service),
+    current_user: User = Depends(require_roles("Recruiter", "Admin")),
+) -> dict:
+    try:
+        return service.send_approved_batch(batch_id, actor_id=current_user.id)
+    except ResumeEnrichmentError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
 @router.get(
     "/candidates/{candidate_review_id}",
     response_model=CandidateReviewResponse,

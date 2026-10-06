@@ -227,14 +227,7 @@ class ResumeEnrichmentService:
 
         count = self.proposed_field_change_repository.bulk_update_status(field_ids, "APPROVED", notes)
 
-        # Update candidate review status if all fields approved
-        candidate_review = self.candidate_review_repository.get_by_id(candidate_review_id)
-        if candidate_review:
-            all_changes = self.proposed_field_change_repository.get_by_candidate_review_id(candidate_review_id)
-            if all(change.change_status == "APPROVED" for change in all_changes):
-                self.candidate_review_repository.update_approval_status(
-                    candidate_review_id, "APPROVED", user_id, notes
-                )
+        self._update_review_decision_status(candidate_review_id, user_id, notes)
 
         logger.info(f"Approved {count} proposed changes for candidate review {candidate_review_id}")
         self._log_activity(
@@ -278,14 +271,7 @@ class ResumeEnrichmentService:
 
         count = self.proposed_field_change_repository.bulk_update_status(field_ids, "REJECTED", notes)
 
-        # Update candidate review status if all fields rejected
-        candidate_review = self.candidate_review_repository.get_by_id(candidate_review_id)
-        if candidate_review:
-            all_changes = self.proposed_field_change_repository.get_by_candidate_review_id(candidate_review_id)
-            if all(change.change_status == "REJECTED" for change in all_changes):
-                self.candidate_review_repository.update_approval_status(
-                    candidate_review_id, "REJECTED", user_id, notes
-                )
+        self._update_review_decision_status(candidate_review_id, user_id, notes)
 
         logger.info(f"Rejected {count} proposed changes for candidate review {candidate_review_id}")
         self._log_activity(
@@ -326,7 +312,7 @@ class ResumeEnrichmentService:
             "zoho_record_id": candidate.zoho_record_id,
             "payload": payload,
             "skipped": skipped,
-            "sent_to_zoho": False,
+            "sent_to_zoho": settings.zoho_write_enabled,
         }
 
     def send_approved_changes(self, candidate_review_id: UUID) -> dict[str, Any]:
@@ -355,7 +341,7 @@ class ResumeEnrichmentService:
             return {
                 **live_preview,
                 "status": "WRITE_BACK_DISABLED",
-                "sent_to_zoho": False,
+                "sent_to_zoho": settings.zoho_write_enabled,
             }
 
         if not live_preview["payload"]:
@@ -372,7 +358,45 @@ class ResumeEnrichmentService:
             candidate_id=live_preview["zoho_record_id"],
             fields=live_preview["payload"],
         )
-        return {**live_preview, "status": "SENT", "sent_to_zoho": True, "zoho_response": result}
+        return {
+            **live_preview,
+            "status": "SENT",
+            "sent_to_zoho": settings.zoho_write_enabled,
+            "zoho_response": result,
+        }
+
+    def send_approved_batch(self, batch_id: UUID, actor_id: UUID | None = None) -> dict[str, Any]:
+        """Process approved reviews in a batch through the guarded candidate flow."""
+        batch = self.review_batch_repository.get_by_id(batch_id)
+        if batch is None:
+            raise ResumeEnrichmentError(f"Review batch {batch_id} not found")
+
+        reviews = self.candidate_review_repository.get_by_batch_id(batch_id)
+        approved_reviews = [
+            review
+            for review in reviews
+            if self.proposed_field_change_repository.get_by_candidate_review_id_and_status(review.id, "APPROVED")
+        ]
+        results = [self.send_approved_changes(review.id) for review in approved_reviews]
+        statuses = [str(result.get("status")) for result in results]
+        summary = {
+            "batch_id": str(batch_id),
+            "total_approved": len(approved_reviews),
+            "processed": len(results),
+            "statuses": statuses,
+            "sent_to_zoho": any(result.get("sent_to_zoho") is True for result in results),
+            "results": results,
+        }
+        self._log_activity(
+            actor_id=actor_id,
+            action_type="resume_enrichment_batch_write_back_blocked" if not settings.zoho_write_enabled else "resume_enrichment_batch_write_back",
+            description=f"Processed {len(results)} approved reviews for batch write-back",
+            entity_type="review_batch",
+            entity_id=batch_id,
+            result="warning" if not settings.zoho_write_enabled else "success",
+            metadata={"processed": len(results), "statuses": statuses},
+        )
+        return summary
 
     def _prepare_live_write_back(
         self, candidate_review_id: UUID, preview: dict[str, Any]
@@ -395,6 +419,35 @@ class ResumeEnrichmentService:
             writable_fields=writable_fields,
         )
         return {**preview, "payload": payload, "skipped": skipped}
+
+    def _update_review_decision_status(
+        self, candidate_review_id: UUID, user_id: UUID | None, notes: str | None
+    ) -> None:
+        changes = self.proposed_field_change_repository.get_by_candidate_review_id(candidate_review_id)
+        status = self._approval_status_for_changes(changes)
+        review = self.candidate_review_repository.get_by_id(candidate_review_id)
+        if review:
+            self.candidate_review_repository.update_approval_status(
+                candidate_review_id, status, user_id, notes
+            )
+            review.write_back_status = "READY_TO_SEND" if any(
+                change.change_status == "APPROVED" for change in changes
+            ) else "NOT_SENT"
+            self.review_batch_repository.session.flush()
+
+    @staticmethod
+    def _approval_status_for_changes(changes: list[Any]) -> str:
+        statuses = [change.change_status for change in changes]
+        approved = statuses.count("APPROVED")
+        rejected = statuses.count("REJECTED")
+        pending = statuses.count("PENDING")
+        if approved and not rejected and not pending:
+            return "APPROVED"
+        if rejected and not approved and not pending:
+            return "REJECTED"
+        if approved or rejected:
+            return "PARTIALLY_APPROVED"
+        return "PENDING"
 
     @classmethod
     def _build_candidate_update_payload(

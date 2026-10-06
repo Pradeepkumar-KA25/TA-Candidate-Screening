@@ -5,7 +5,13 @@ from fastapi import APIRouter, Depends, status
 from app.core.dependencies import get_integration_service, require_roles
 from app.models.user import User
 from app.schemas.errors import ErrorResponse
-from app.schemas.integrations import AutoSyncSettingsRequest, ZohoCandidateDiagnosticsResponse, ZohoIntegrationStatusResponse
+from app.schemas.integrations import (
+    AutoSyncSettingsRequest,
+    ZohoCandidateDiagnosticsResponse,
+    ZohoCredentialsRequest,
+    ZohoCredentialsResponse,
+    ZohoIntegrationStatusResponse,
+)
 from app.services.integration_service import IntegrationService
 
 
@@ -48,6 +54,30 @@ async def update_zoho_auto_sync(
     integration_service: IntegrationService = Depends(get_integration_service),
 ) -> ZohoIntegrationStatusResponse:
     return integration_service.update_auto_sync_settings(settings.auto_sync_enabled, settings.auto_sync_interval_minutes)
+
+
+@integrations_router.put(
+    "/zoho/credentials",
+    response_model=ZohoCredentialsResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        401: {"model": ErrorResponse, "description": "Missing, invalid, or expired token"},
+        403: {"model": ErrorResponse, "description": "Only administrators can update Zoho credentials"},
+    },
+    summary="Save Zoho Recruit credentials",
+    description="Encrypts and stores Zoho access and refresh tokens. Token values are never returned.",
+)
+async def save_zoho_credentials(
+    credentials: ZohoCredentialsRequest,
+    _: User = Depends(require_roles("Admin")),
+    integration_service: IntegrationService = Depends(get_integration_service),
+) -> ZohoCredentialsResponse:
+    record = integration_service.save_zoho_credentials(credentials.access_token, credentials.refresh_token)
+    return ZohoCredentialsResponse(
+        access_token_configured=bool(record.access_token_encrypted),
+        refresh_token_configured=bool(record.refresh_token_encrypted),
+        updated_at=record.updated_at,
+    )
 
 
 @integrations_router.get(

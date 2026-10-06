@@ -19,8 +19,8 @@ export interface CandidateReview {
   batch_id: string;
   candidate_id: string;
   candidate_name: string;
-  approval_status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  write_back_status: 'NOT_SENT' | 'VALIDATED' | 'DISABLED' | 'SYNCED' | 'FAILED';
+  approval_status: 'PENDING' | 'PARTIALLY_APPROVED' | 'APPROVED' | 'REJECTED';
+  write_back_status: 'NOT_SENT' | 'READY_TO_SEND' | 'DISABLED' | 'SYNCED' | 'FAILED';
   write_back_error: string | null;
   write_back_at: string | null;
   approval_notes: string | null;
@@ -73,5 +73,5 @@ export interface WriteBackPreview {
   zoho_record_id: string;
   payload: Record<string, unknown>;
   skipped: Array<{ field: string; reason: string }>;
-  sent_to_zoho: false;
+  sent_to_zoho: boolean;
 }

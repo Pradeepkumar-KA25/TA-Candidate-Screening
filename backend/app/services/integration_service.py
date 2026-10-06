@@ -113,6 +113,17 @@ class IntegrationService:
         record = self.repository.get_or_create(self.provider_name)
         return self._ensure_active_zoho_token(record)
 
+    def save_zoho_credentials(self, access_token: str, refresh_token: str):
+        """Encrypt and persist manually supplied Zoho credentials."""
+        record = self.repository.get_or_create(self.provider_name)
+        record.access_token_encrypted = encrypt_value(access_token.strip())
+        record.refresh_token_encrypted = encrypt_value(refresh_token.strip())
+        record.token_expires_at = None
+        record.connection_state = "connected"
+        record.status = "healthy"
+        record.last_error = None
+        return self.repository.save(record)
+
     def _ensure_active_zoho_token(self, record) -> str | None:
         now = datetime.now(UTC)
 

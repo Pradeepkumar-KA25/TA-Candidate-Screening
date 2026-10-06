@@ -323,3 +323,30 @@
 .Math {
   // For Math.ceil in template - this is a workaround
 }
+
+:host-context(body[data-theme='dark']) {
+  .batch-list-container { background-color: var(--page-bg); color: var(--slate-900); }
+  .batch-list-header h1 { color: var(--slate-900); }
+  .table-responsive,
+  .empty-state,
+  .pagination-container { background-color: var(--surface); color: var(--slate-900); }
+  .table thead { background-color: var(--surface-strong); border-bottom-color: var(--slate-200); }
+  .table thead th,
+  .table tbody tr td,
+  .pagination-container .pagination-info,
+  .loading-container { color: var(--slate-600); }
+  .table tbody tr { border-bottom-color: var(--slate-200); }
+  .table tbody tr:hover { background-color: var(--surface-strong); }
+  .empty-state { border-color: var(--slate-200); color: var(--slate-400); }
+  .batch-size-dialog { background-color: var(--surface); color: var(--slate-900); }
+  .batch-size-dialog h2,
+  .batch-size-dialog label { color: var(--slate-900); }
+  .batch-size-dialog input { background-color: var(--surface-strong); border-color: var(--slate-200); color: var(--slate-900); }
+  .batch-size-dialog p { color: var(--slate-600); }
+  .batch-size-dialog .large-batch-warning { background-color: rgba(242, 184, 75, 0.1); border-color: rgba(242, 184, 75, 0.45); color: var(--amber-600); }
+  .badge.status-pending,
+  .badge.status-processing,
+  .badge.status-warning { background-color: rgba(242, 184, 75, 0.16); color: var(--amber-600); }
+  .badge.status-completed { background-color: rgba(61, 213, 152, 0.16); color: var(--green-600); }
+  .badge.status-failed { background-color: rgba(255, 107, 107, 0.16); color: var(--red-600); }
+}

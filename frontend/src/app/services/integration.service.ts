@@ -2,7 +2,12 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, catchError, finalize, of, switchMap, tap, timer } from 'rxjs';
 
-import { AutoSyncSettings, ZohoIntegrationStatus } from '../models/integration.models';
+import {
+  AutoSyncSettings,
+  ZohoCredentials,
+  ZohoCredentialsResponse,
+  ZohoIntegrationStatus,
+} from '../models/integration.models';
 import { ApiConfigService } from '../config/api.config';
 
 @Injectable({
@@ -58,6 +63,21 @@ export class IntegrationService {
       }),
       finalize(() => this.loadingSubject.next(false))
     );
+  }
+
+  saveZohoCredentials(credentials: ZohoCredentials): Observable<ZohoCredentialsResponse> {
+    this.loadingSubject.next(true);
+
+    return this.httpClient
+      .put<ZohoCredentialsResponse>(`${this.apiBaseUrl}/integrations/zoho/credentials`, credentials)
+      .pipe(
+        tap(() => this.errorSubject.next(null)),
+        catchError((error) => {
+          this.errorSubject.next('Unable to save Zoho credentials');
+          throw error;
+        }),
+        finalize(() => this.loadingSubject.next(false))
+      );
   }
 
   pollZohoStatus(intervalMs: number = 30000): Observable<ZohoIntegrationStatus> {

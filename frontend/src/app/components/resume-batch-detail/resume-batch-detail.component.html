@@ -12,6 +12,14 @@
     >
       🗑️ Delete Batch
     </button>
+    <button
+      class="btn btn-secondary"
+      (click)="sendApprovedBatch()"
+      [disabled]="loading || batchWriteBackLoading || getSendableCount() === 0"
+      title="Process approved changes without sending while Zoho writes are disabled"
+    >
+      {{ batchWriteBackLoading ? 'Processing...' : 'Send Approved Batch' }}
+    </button>
   </div>
 
   <div *ngIf="showDeleteConfirmation && batch" class="delete-confirmation" role="alert">

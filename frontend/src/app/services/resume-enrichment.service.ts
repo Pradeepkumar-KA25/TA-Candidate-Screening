@@ -89,6 +89,13 @@ export class ResumeEnrichmentService {
     );
   }
 
+  sendApprovedBatch(batchId: string): Observable<Record<string, unknown>> {
+    return this.http.post<Record<string, unknown>>(
+      `${this.apiBaseUrl}/resume-enrichment/batches/${batchId}/write-back`,
+      {}
+    );
+  }
+
   /**
    * Approve proposed changes for a candidate.
    * @param candidateReviewId UUID of the candidate review

@@ -96,3 +96,14 @@ def test_update_candidate_is_blocked_when_write_back_disabled(monkeypatch) -> No
 
     with pytest.raises(ZohoRecruitWriteDisabledError):
         client.update_candidate('token', 'candidate-1', {'Phone': '+1 555 0100'})
+
+
+def test_fetch_candidate_returns_live_record() -> None:
+    fake_client = FakeHttpClient(
+        [httpx.Response(status_code=200, json={'data': [{'id': 'z-1', 'Phone': None}]})]
+    )
+    client = ZohoRecruitClient(client=fake_client)
+
+    candidate = client.fetch_candidate('token', 'z-1')
+
+    assert candidate == {'id': 'z-1', 'Phone': None}

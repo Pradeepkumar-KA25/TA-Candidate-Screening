@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ZohoIntegrationStatusResponse(BaseModel):
@@ -21,6 +21,17 @@ class ZohoIntegrationStatusResponse(BaseModel):
 class AutoSyncSettingsRequest(BaseModel):
     auto_sync_enabled: bool
     auto_sync_interval_minutes: int
+
+
+class ZohoCredentialsRequest(BaseModel):
+    access_token: str = Field(min_length=1, max_length=4096)
+    refresh_token: str = Field(min_length=1, max_length=4096)
+
+
+class ZohoCredentialsResponse(BaseModel):
+    access_token_configured: bool
+    refresh_token_configured: bool
+    updated_at: datetime
 
 
 class ZohoFieldMetadataResponse(BaseModel):

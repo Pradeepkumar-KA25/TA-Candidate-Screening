@@ -51,3 +51,23 @@ def test_write_back_payload_contains_only_approved_empty_writable_fields() -> No
         "zoho_field_no_longer_empty",
         "field_not_writable",
     }
+
+
+def test_approval_status_supports_partial_decisions() -> None:
+    make_change = lambda status: SimpleNamespace(change_status=status)
+
+    assert ResumeEnrichmentService._approval_status_for_changes(
+        [make_change("APPROVED"), make_change("APPROVED")]
+    ) == "APPROVED"
+    assert ResumeEnrichmentService._approval_status_for_changes(
+        [make_change("REJECTED"), make_change("REJECTED")]
+    ) == "REJECTED"
+    assert ResumeEnrichmentService._approval_status_for_changes(
+        [make_change("APPROVED"), make_change("REJECTED")]
+    ) == "PARTIALLY_APPROVED"
+    assert ResumeEnrichmentService._approval_status_for_changes(
+        [make_change("APPROVED"), make_change("PENDING")]
+    ) == "PARTIALLY_APPROVED"
+    assert ResumeEnrichmentService._approval_status_for_changes(
+        [make_change("PENDING")]
+    ) == "PENDING"

@@ -3,7 +3,6 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, catchError, finalize, forkJoin, map, of, tap } from 'rxjs';
 
 import { DashboardActivityItem, DashboardOverview, DashboardRecentActivityResponse, DashboardStats } from '../models/dashboard.models';
-import { DashboardAnalytics } from '../models/analytics.models';
 import { ApiConfigService } from '../config/api.config';
 
 @Injectable({
@@ -90,9 +89,4 @@ export class DashboardService {
     );
   }
 
-  getAnalytics(days = 7): Observable<DashboardAnalytics> {
-    return this.httpClient.get<DashboardAnalytics>(`${this.apiBaseUrl}/dashboard/analytics`, {
-      params: { days: String(days) },
-    });
-  }
 }
