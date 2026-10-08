@@ -16,3 +16,4 @@ from app.models.kanini_resume_db import (
 )
 from app.models.company_sector import CompanySector
 from app.models.zoho_field_metadata import ZohoFieldMetadataRecord
+from app.models.candidate_sync_ledger import CandidateSyncLedger

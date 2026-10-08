@@ -11,11 +11,13 @@ from app.integrations.zoho_oauth import ZohoOAuthClient
 from app.integrations.zoho_recruit import ZohoRecruitClient, ZohoRecruitClientError, ZohoRecruitPermanentError
 from app.repositories.activity_log_repository import ActivityLogRepository
 from app.repositories.candidate_repository import CandidateRepository
+from app.repositories.candidate_sync_ledger_repository import CandidateSyncLedgerRepository
 from app.repositories.integration_settings_repository import IntegrationSettingsRepository
 from app.repositories.sync_log_repository import SyncLogRepository
 from app.services.duplicate_detection_service import DuplicateDetectionService
 from app.services.normalization_service import NormalizationService
 from app.services.resume_fetch_service import ResumeFetchService, ResumeFetchError
+from app.services.zoho_candidate_version import candidate_payload_hash, parse_zoho_modified_time
 from app.schemas.sync import (
     CandidateSyncHistoryItemResponse,
     CandidateSyncHistoryResponse,
@@ -48,6 +50,7 @@ class SyncNotFoundError(SyncError):
 class SyncService:
     sync_log_repository: SyncLogRepository
     candidate_repository: CandidateRepository
+    candidate_sync_ledger_repository: CandidateSyncLedgerRepository
     integration_repository: IntegrationSettingsRepository
     activity_log_repository: ActivityLogRepository
     duplicate_detection_service: DuplicateDetectionService
@@ -106,12 +109,12 @@ class SyncService:
             current_page = max(1, integration.next_candidate_sync_page)
             has_more_records = True
 
-            while created < max_records and has_more_records:
-                page_size = 200
+            while created + updated < max_records and has_more_records:
+                processed_before_page = created + updated
                 candidate_page = self.zoho_recruit_client.fetch_candidates_page(
                     access_token=access_token,
                     page=current_page,
-                    per_page=page_size,
+                    per_page=max_records,
                 )
                 has_more_records = candidate_page.has_more
 
@@ -131,20 +134,37 @@ class SyncService:
                         continue
 
                     normalized = self._normalize_candidate(raw_candidate)
+                    zoho_record_id = normalized["zoho_record_id"]
+                    modified_time = parse_zoho_modified_time(raw_candidate.get("Modified_Time"))
+                    payload_hash = candidate_payload_hash(raw_candidate)
+                    ledger_entry = self.candidate_sync_ledger_repository.get_by_zoho_record_id(zoho_record_id)
+                    is_new_candidate = ledger_entry is None
+                    if not self._should_process_candidate(
+                        ledger_entry=ledger_entry,
+                        modified_time=modified_time,
+                        payload_hash=payload_hash,
+                    ):
+                        continue
+
                     normalized_records += self._count_normalization_changes(raw_candidate, normalized)
                     normalization_examples = self._merge_normalization_examples(
                         current=normalization_examples,
                         discovered=self._extract_normalization_examples(raw_candidate, normalized),
                     )
                     existing = self.candidate_repository.find_existing_by_zoho_ids(
-                        normalized["zoho_record_id"],
+                        zoho_record_id,
                         normalized.get("zoho_candidate_id"),
                     )
-                    if existing is not None:
-                        continue
 
+                    ledger_entry = self.candidate_sync_ledger_repository.mark_processing(
+                        zoho_record_id=zoho_record_id,
+                        payload_hash=payload_hash,
+                    )
                     candidate, _ = self.candidate_repository.create_or_update(normalized, commit=False)
-                    created += 1
+                    if is_new_candidate:
+                        created += 1
+                    else:
+                        updated += 1
 
                     # Fetch resume if service is available
                     if self.resume_fetch_service is not None:
@@ -179,6 +199,12 @@ class SyncService:
                                 description=f"Unexpected error fetching resume for {candidate.full_name}: {str(exc)}",
                             )
 
+                    self.candidate_sync_ledger_repository.mark_completed(
+                        ledger_entry,
+                        modified_time=modified_time,
+                        payload_hash=payload_hash,
+                    )
+
                     if fetched % self.progress_commit_interval == 0:
                         self.sync_log_repository.mark_running_progress(
                             sync_id=sync_id,
@@ -189,10 +215,13 @@ class SyncService:
                             normalization_examples=normalization_examples,
                         )
 
-                    if created >= max_records:
+                    if created + updated >= max_records:
                         break
 
-                if created >= max_records or not candidate_page.candidates:
+                if created + updated >= max_records or not candidate_page.candidates:
+                    break
+
+                if created + updated > processed_before_page:
                     break
 
                 current_page += 1
@@ -438,6 +467,25 @@ class SyncService:
         if timestamp.tzinfo is None:
             return timestamp.replace(tzinfo=UTC)
         return timestamp.astimezone(UTC)
+
+    @classmethod
+    def _should_process_candidate(
+        cls,
+        *,
+        ledger_entry,
+        modified_time: datetime | None,
+        payload_hash: str,
+    ) -> bool:
+        if ledger_entry is None or ledger_entry.status != "completed":
+            return True
+
+        last_modified_time = ledger_entry.last_processed_modified_time
+        if modified_time is not None:
+            if last_modified_time is None:
+                return True
+            return cls._as_utc(modified_time) > cls._as_utc(last_modified_time)
+
+        return ledger_entry.payload_hash != payload_hash
 
     def _normalize_candidate(self, raw_candidate: dict) -> dict:
         zoho_record_id = str(raw_candidate.get("id")).strip()
