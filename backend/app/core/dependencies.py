@@ -14,6 +14,7 @@ from app.models.user import User
 from app.repositories.activity_log_repository import ActivityLogRepository
 from app.repositories.auth_repository import AuthRepository
 from app.repositories.candidate_repository import CandidateRepository
+from app.repositories.candidate_sync_ledger_repository import CandidateSyncLedgerRepository
 from app.repositories.candidate_review_repository import CandidateReviewRepository
 from app.repositories.duplicate_review_repository import DuplicateReviewRepository
 from app.repositories.integration_settings_repository import IntegrationSettingsRepository
@@ -83,6 +84,12 @@ def get_sync_log_repository(session: Session = Depends(get_db_session)) -> SyncL
 
 def get_candidate_repository(session: Session = Depends(get_db_session)) -> CandidateRepository:
     return CandidateRepository(session)
+
+
+def get_candidate_sync_ledger_repository(
+    session: Session = Depends(get_db_session),
+) -> CandidateSyncLedgerRepository:
+    return CandidateSyncLedgerRepository(session)
 
 
 def get_duplicate_review_repository(session: Session = Depends(get_db_session)) -> DuplicateReviewRepository:
@@ -215,6 +222,7 @@ def get_resume_fetch_service(
 def get_sync_service(
     sync_log_repository: SyncLogRepository = Depends(get_sync_log_repository),
     candidate_repository: CandidateRepository = Depends(get_candidate_repository),
+    candidate_sync_ledger_repository: CandidateSyncLedgerRepository = Depends(get_candidate_sync_ledger_repository),
     integration_repository: IntegrationSettingsRepository = Depends(get_integration_settings_repository),
     activity_log_repository: ActivityLogRepository = Depends(get_activity_log_repository),
     duplicate_detection_service: DuplicateDetectionService = Depends(get_duplicate_detection_service),
@@ -226,6 +234,7 @@ def get_sync_service(
     return SyncService(
         sync_log_repository=sync_log_repository,
         candidate_repository=candidate_repository,
+        candidate_sync_ledger_repository=candidate_sync_ledger_repository,
         integration_repository=integration_repository,
         activity_log_repository=activity_log_repository,
         duplicate_detection_service=duplicate_detection_service,
@@ -308,6 +317,9 @@ def get_resume_enrichment_service(
     activity_log_repository: ActivityLogRepository = Depends(get_activity_log_repository),
     zoho_field_metadata_repository: ZohoFieldMetadataRepository = Depends(get_zoho_field_metadata_repository),
     integration_service: IntegrationService = Depends(get_integration_service),
+    candidate_sync_ledger_repository: CandidateSyncLedgerRepository = Depends(
+        get_candidate_sync_ledger_repository
+    ),
 ) -> ResumeEnrichmentService:
     return ResumeEnrichmentService(
         review_batch_repository=review_batch_repository,
@@ -319,6 +331,7 @@ def get_resume_enrichment_service(
         activity_log_repository=activity_log_repository,
         zoho_field_metadata_repository=zoho_field_metadata_repository,
         integration_service=integration_service,
+        candidate_sync_ledger_repository=candidate_sync_ledger_repository,
     )
 
 

@@ -9,6 +9,7 @@ from app.models.integration_settings import IntegrationSettings
 from app.models.user import User
 from app.repositories.activity_log_repository import ActivityLogRepository
 from app.repositories.candidate_repository import CandidateRepository
+from app.repositories.candidate_sync_ledger_repository import CandidateSyncLedgerRepository
 from app.repositories.duplicate_review_repository import DuplicateReviewRepository
 from app.repositories.integration_settings_repository import IntegrationSettingsRepository
 from app.repositories.normalization_rule_repository import NormalizationRuleRepository
@@ -62,6 +63,7 @@ def _build_sync_service(
     return SyncService(
         sync_log_repository=SyncLogRepository(sqlite_session),
         candidate_repository=CandidateRepository(sqlite_session),
+        candidate_sync_ledger_repository=CandidateSyncLedgerRepository(sqlite_session),
         integration_repository=IntegrationSettingsRepository(sqlite_session),
         activity_log_repository=ActivityLogRepository(sqlite_session),
         duplicate_detection_service=duplicate_detection_service
@@ -189,7 +191,7 @@ def test_sync_service_resets_stale_running_sync_before_start(sqlite_session, use
     assert trigger.status == "running"
 
 
-def test_sync_service_skips_existing_candidate_on_resync(sqlite_session, user_factory) -> None:
+def test_sync_service_updates_existing_candidate_when_zoho_profile_changes(sqlite_session, user_factory) -> None:
     recruiter = user_factory(role="Recruiter")
 
     integration = IntegrationSettings(
@@ -212,6 +214,7 @@ def test_sync_service_skips_existing_candidate_on_resync(sqlite_session, user_fa
             "Current_Employer": "Acme",
             "Current_Location": "Bangalore",
             "Skill_Set": "Python",
+            "Modified_Time": "2026-10-08T09:00:00+00:00",
         }
     ]
     second_payload = [
@@ -224,6 +227,7 @@ def test_sync_service_skips_existing_candidate_on_resync(sqlite_session, user_fa
             "Current_Employer": "Initech",
             "Current_Location": "Bangalore",
             "Skill_Set": "Python, FastAPI",
+            "Modified_Time": "2026-10-08T10:00:00+00:00",
         }
     ]
 
@@ -239,13 +243,12 @@ def test_sync_service_skips_existing_candidate_on_resync(sqlite_session, user_fa
     second_status = service.get_sync_status(trigger_2.sync_id)
     assert first_status.records_new == 1
     assert second_status.records_new == 0
-    assert second_status.records_updated == 0
+    assert second_status.records_updated == 1
 
     candidate_repo = CandidateRepository(sqlite_session)
     candidate = candidate_repo.get_by_zoho_record_id("z-1")
     assert candidate is not None
-    assert candidate.current_company == "Acme"
-    assert candidate.zoho_candidate_id == "CAND-1"
+    assert candidate.current_company == "Initech"
 
 
 def test_sync_service_skips_invalid_candidate_payload(sqlite_session, user_factory) -> None:

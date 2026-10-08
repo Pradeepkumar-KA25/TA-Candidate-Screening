@@ -11,6 +11,7 @@ from app.models import user  # noqa: F401
 from app.models import integration_settings  # noqa: F401
 from app.models import sync_log  # noqa: F401
 from app.models import candidate  # noqa: F401
+from app.models import candidate_sync_ledger  # noqa: F401
 from app.models import activity_log  # noqa: F401
 from app.models import job_description  # noqa: F401
 from app.models import saved_filter  # noqa: F401

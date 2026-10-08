@@ -11,6 +11,7 @@ from app.models.candidate import Candidate
 from app.models.candidate_review import CandidateReview
 from app.models.review_batch import ReviewBatch
 from app.repositories.candidate_repository import CandidateRepository
+from app.repositories.candidate_sync_ledger_repository import CandidateSyncLedgerRepository
 from app.repositories.candidate_review_repository import CandidateReviewRepository
 from app.repositories.proposed_field_change_repository import ProposedFieldChangeRepository
 from app.repositories.review_batch_repository import ReviewBatchRepository
@@ -18,6 +19,7 @@ from app.repositories.activity_log_repository import ActivityLogRepository
 from app.repositories.zoho_field_metadata_repository import ZohoFieldMetadataRepository
 from app.services.resume_fetch_service import ResumeFetchService
 from app.services.integration_service import IntegrationService
+from app.services.zoho_candidate_version import candidate_payload_hash, parse_zoho_modified_time
 
 logger = logging.getLogger("resume_enrichment")
 
@@ -80,6 +82,7 @@ class ResumeEnrichmentService:
         activity_log_repository: ActivityLogRepository | None = None,
         zoho_field_metadata_repository: ZohoFieldMetadataRepository | None = None,
         integration_service: IntegrationService | None = None,
+        candidate_sync_ledger_repository: CandidateSyncLedgerRepository | None = None,
     ):
         self.review_batch_repository = review_batch_repository
         self.candidate_review_repository = candidate_review_repository
@@ -90,6 +93,7 @@ class ResumeEnrichmentService:
         self.activity_log_repository = activity_log_repository
         self.zoho_field_metadata_repository = zoho_field_metadata_repository
         self.integration_service = integration_service
+        self.candidate_sync_ledger_repository = candidate_sync_ledger_repository
 
     def create_review_batch(
         self, batch_size: int | None = None, access_token: str | None = None, created_by_user_id: UUID | None = None
@@ -358,6 +362,16 @@ class ResumeEnrichmentService:
             candidate_id=live_preview["zoho_record_id"],
             fields=live_preview["payload"],
         )
+        if self.candidate_sync_ledger_repository is not None:
+            updated_candidate = self.zoho_recruit_client.fetch_candidate(
+                token,
+                live_preview["zoho_record_id"],
+            )
+            self.candidate_sync_ledger_repository.record_completed(
+                zoho_record_id=live_preview["zoho_record_id"],
+                modified_time=parse_zoho_modified_time(updated_candidate.get("Modified_Time")),
+                payload_hash=candidate_payload_hash(updated_candidate),
+            )
         return {
             **live_preview,
             "status": "SENT",

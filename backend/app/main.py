@@ -24,6 +24,7 @@ async def auto_sync_background_worker():
     from app.core.database import get_session_factory
     from app.repositories.sync_log_repository import SyncLogRepository
     from app.repositories.candidate_repository import CandidateRepository
+    from app.repositories.candidate_sync_ledger_repository import CandidateSyncLedgerRepository
     from app.repositories.integration_settings_repository import IntegrationSettingsRepository
     from app.repositories.activity_log_repository import ActivityLogRepository
     from app.repositories.duplicate_review_repository import DuplicateReviewRepository
@@ -49,6 +50,7 @@ async def auto_sync_background_worker():
                 # Initialize repositories
                 sync_log_repo = SyncLogRepository(session)
                 candidate_repo = CandidateRepository(session)
+                candidate_sync_ledger_repo = CandidateSyncLedgerRepository(session)
                 integration_repo = IntegrationSettingsRepository(session)
                 activity_log_repo = ActivityLogRepository(session)
                 duplicate_review_repo = DuplicateReviewRepository(session)
@@ -70,6 +72,7 @@ async def auto_sync_background_worker():
                 sync_service = SyncService(
                     sync_log_repository=sync_log_repo,
                     candidate_repository=candidate_repo,
+                    candidate_sync_ledger_repository=candidate_sync_ledger_repo,
                     integration_repository=integration_repo,
                     activity_log_repository=activity_log_repo,
                     duplicate_detection_service=duplicate_detection_service,
