@@ -6,7 +6,7 @@ export interface ProposedFieldChange {
   extracted_resume_value: Record<string, unknown> | string | null;
   proposed_value: Record<string, unknown> | string | null;
   change_status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  sync_status: 'NOT_SENT' | 'SKIPPED' | 'SYNCED' | 'FAILED';
+  sync_status: 'NOT_SENT' | 'EXPORTED' | 'SKIPPED' | 'SYNCED' | 'FAILED';
   sync_error: string | null;
   synced_at: string | null;
   field_approval_notes: string | null;
@@ -20,7 +20,7 @@ export interface CandidateReview {
   candidate_id: string;
   candidate_name: string;
   approval_status: 'PENDING' | 'PARTIALLY_APPROVED' | 'APPROVED' | 'REJECTED';
-  write_back_status: 'NOT_SENT' | 'READY_TO_SEND' | 'DISABLED' | 'SYNCED' | 'FAILED';
+  write_back_status: 'NOT_SENT' | 'EXPORTED' | 'READY_TO_SEND' | 'DISABLED' | 'SYNCED' | 'FAILED';
   write_back_error: string | null;
   write_back_at: string | null;
   approval_notes: string | null;

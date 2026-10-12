@@ -6,6 +6,7 @@ from sqlalchemy import cast, func, select, Integer
 from sqlalchemy.orm import Session
 
 from app.models.review_batch import ReviewBatch
+from app.models.candidate_review import CandidateReview
 
 
 class ReviewBatchRepository:
@@ -83,6 +84,25 @@ class ReviewBatchRepository:
             if rejected is not None:
                 batch.rejected_candidates = rejected
             self.session.flush()
+        return batch
+
+    def refresh_candidate_counts(self, batch_id: UUID) -> ReviewBatch | None:
+        batch = self.get_by_id(batch_id)
+        if batch is None:
+            return None
+
+        status_counts = dict(
+            self.session.query(CandidateReview.approval_status, func.count(CandidateReview.id))
+            .filter(CandidateReview.batch_id == batch_id)
+            .group_by(CandidateReview.approval_status)
+            .all()
+        )
+        total = sum(status_counts.values())
+        batch.processed_candidates = total
+        batch.pending_candidates = status_counts.get("PENDING", 0) + status_counts.get("PARTIALLY_APPROVED", 0)
+        batch.approved_candidates = status_counts.get("APPROVED", 0)
+        batch.rejected_candidates = status_counts.get("REJECTED", 0)
+        self.session.flush()
         return batch
 
     def delete(self, batch_id: UUID) -> bool:

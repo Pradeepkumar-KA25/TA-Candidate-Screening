@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Response, status
 
 from app.core.dependencies import (
     get_resume_enrichment_service,
@@ -25,19 +25,50 @@ from app.schemas.resume_enrichment import (
 from app.services.resume_enrichment_service import ResumeEnrichmentService
 from app.services.resume_enrichment_service import ResumeEnrichmentError
 from app.repositories.activity_log_repository import ActivityLogRepository
+from app.core.database import get_db_session
+from app.services.batch_excel_export_service import BatchExcelExportService
+from app.background.resume_enrichment import process_review_batch_job
 
 router = APIRouter(prefix="/resume-enrichment", tags=["resume-enrichment"])
+
+
+@router.get(
+    "/export-approved",
+    summary="Export approved changes for Zoho Recruit",
+    description=(
+        "Downloads all approved, not-yet-exported enrichment changes across review batches as a Zoho-compatible "
+        "Excel workbook and marks those changes as EXPORTED."
+    ),
+)
+def export_approved_changes(
+    session=Depends(get_db_session),
+    current_user: User = Depends(require_roles("Recruiter", "Admin")),
+) -> Response:
+    try:
+        file_bytes, filename, exported_count = BatchExcelExportService(session).export_approved_changes(current_user.id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+    return Response(
+        content=file_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "X-Exported-Changes": str(exported_count),
+        },
+    )
 
 
 @router.post(
     "/batches",
     response_model=ReviewBatchResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_202_ACCEPTED,
     summary="Create a new review batch",
     description="Create a new batch of candidates for resume enrichment review. Requires Recruiter or Admin role.",
 )
 def create_review_batch(
     request: CreateReviewBatchRequest,
+    background_tasks: BackgroundTasks,
     service: ResumeEnrichmentService = Depends(get_resume_enrichment_service),
     current_user: User = Depends(require_roles("Recruiter", "Admin")),
 ) -> ReviewBatchResponse:
@@ -60,9 +91,11 @@ def create_review_batch(
         HTTPException: If batch creation fails
     """
     try:
-        batch = service.create_review_batch(
+        batch = service.start_review_batch(
             batch_size=request.batch_size, created_by_user_id=current_user.id
         )
+        if batch.total_candidates:
+            background_tasks.add_task(process_review_batch_job, batch.id)
         return ReviewBatchResponse.model_validate(batch)
     except Exception as exc:
         raise HTTPException(
@@ -94,6 +127,8 @@ def list_review_batches(
         ReviewBatchListResponse with list of batches and pagination info
     """
     batches, total = service.review_batch_repository.get_paginated(page, page_size)
+    for batch in batches:
+        service.review_batch_repository.refresh_candidate_counts(batch.id)
     return ReviewBatchListResponse(
         batches=[ReviewBatchResponse.model_validate(batch) for batch in batches],
         total=total,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID
@@ -44,12 +45,12 @@ class ResumeEnrichmentService:
         "email": ("contact.email", "Email Address", ("Email", "Email_Optional")),
         "phone": ("contact.phone", "Phone Number", ("Phone", "Mobile")),
         "designation": (
-            "experience[0].title",
+            "experience.current.title",
             "Designation / Job Title",
             ("Designation", "Job_Title_as_per_KANINI", "Job_Title_as_per_Kanini_Function", "Job_Role_as_per_Kanini", "Final_Job_Role"),
         ),
         "current_company": (
-            "experience[0].company",
+            "experience.current.company",
             "Current Company",
             ("Current_Employer", "Employer_Details", "Current_Company"),
         ),
@@ -95,18 +96,11 @@ class ResumeEnrichmentService:
         self.integration_service = integration_service
         self.candidate_sync_ledger_repository = candidate_sync_ledger_repository
 
-    def create_review_batch(
+    def start_review_batch(
         self, batch_size: int | None = None, access_token: str | None = None, created_by_user_id: UUID | None = None
     ) -> ReviewBatch:
         """
-        Create a new review batch and process candidates.
-
-        1. Select batch_size candidates (or from config)
-        2. For each candidate, fetch Zoho data + resume
-        3. Extract structured resume data
-        4. Compare Zoho vs extracted values
-        5. Create proposed changes (only for empty Zoho fields with resume data)
-        6. Save to database
+        Create and reserve a review batch before background processing starts.
 
         Args:
             batch_size: Number of candidates to process (uses REVIEW_BATCH_SIZE config if None)
@@ -135,7 +129,7 @@ class ResumeEnrichmentService:
                 created_by_user_id=created_by_user_id,
             )
 
-            # Get candidates without review yet (select up to batch_size)
+            # Reserve candidates now so concurrent batch requests cannot select them again.
             candidates_to_review = self.candidate_repository.get_unreviewed_candidates(limit=batch_size)
 
             if not candidates_to_review:
@@ -145,52 +139,81 @@ class ResumeEnrichmentService:
                 return batch
 
             batch.total_candidates = len(candidates_to_review)
-
-            logger.info(f"Processing {len(candidates_to_review)} candidates in batch {batch_number}")
-
-            # Update batch status
             batch.status = "PROCESSING"
             batch.processing_started_at = datetime.now(timezone.utc)
-            self.review_batch_repository.session.flush()
-
-            # Process each candidate
-            successful_count = 0
-            error_count = 0
-            writable_fields = self._get_writable_fields(access_token)
-
             for candidate in candidates_to_review:
-                try:
-                    self._process_candidate(batch.id, candidate, access_token, writable_fields)
-                    successful_count += 1
-                except Exception as exc:
-                    logger.error(f"Error processing candidate {candidate.full_name} ({candidate.id}): {str(exc)}")
-                    error_count += 1
-                    # Continue processing other candidates instead of stopping
-
-            # Update batch counts
-            batch.processed_candidates = successful_count
-            batch.status = "COMPLETED"
-            batch.processing_completed_at = datetime.now(timezone.utc)
+                self.candidate_review_repository.create(
+                    batch_id=batch.id,
+                    candidate_id=candidate.id,
+                    candidate_name=candidate.full_name,
+                    zoho_candidate_id=candidate.zoho_candidate_id,
+                )
             self.review_batch_repository.session.flush()
-
-            logger.info(
-                f"Batch {batch_number} completed: {successful_count} processed, {error_count} errors"
-            )
-            self._log_activity(
-                actor_id=created_by_user_id,
-                action_type="resume_enrichment_batch_created",
-                description=f"Created resume enrichment batch {batch_number} for {len(candidates_to_review)} candidates",
-                entity_type="review_batch",
-                entity_id=batch.id,
-                result="warning" if error_count else "success",
-                metadata={"processed": successful_count, "errors": error_count},
-            )
-
             return batch
 
         except Exception as exc:
             logger.error(f"Failed to create review batch: {str(exc)}")
             raise ResumeEnrichmentError(f"Failed to create review batch: {str(exc)}") from exc
+
+    def create_review_batch(
+        self, batch_size: int | None = None, access_token: str | None = None, created_by_user_id: UUID | None = None
+    ) -> ReviewBatch:
+        """Create and process a review batch synchronously for existing service callers."""
+        batch = self.start_review_batch(batch_size, access_token, created_by_user_id)
+        if batch.total_candidates:
+            self.process_review_batch(batch.id, access_token)
+        return batch
+
+    def process_review_batch(self, batch_id: UUID, access_token: str | None = None) -> None:
+        """Process reserved reviews and commit each candidate result independently."""
+        batch = self.review_batch_repository.get_by_id(batch_id)
+        if batch is None or batch.status == "COMPLETED":
+            return
+
+        errors: list[str] = []
+        processed = batch.processed_candidates
+        reviews = self.candidate_review_repository.get_by_batch_id(batch_id)
+        writable_fields = self._get_writable_fields(access_token)
+
+        for review_id in [review.id for review in reviews]:
+            try:
+                review = self.candidate_review_repository.get_by_id(review_id)
+                if review is None:
+                    continue
+                candidate = self.candidate_repository.get_by_id(review.candidate_id)
+                if candidate is None:
+                    raise ResumeEnrichmentError("Candidate no longer exists")
+                self._process_candidate_review(review, candidate, access_token, writable_fields)
+            except Exception as exc:
+                self.review_batch_repository.session.rollback()
+                logger.exception("Error processing review %s in batch %s", review_id, batch_id)
+                errors.append(str(exc))
+            finally:
+                batch = self.review_batch_repository.get_by_id(batch_id)
+                if batch is not None:
+                    processed += 1
+                    batch.processed_candidates = processed
+                    if errors:
+                        batch.error_message = "; ".join(errors)[-512:]
+                    self.review_batch_repository.session.commit()
+
+        batch = self.review_batch_repository.get_by_id(batch_id)
+        if batch is None:
+            return
+        batch.status = "COMPLETED"
+        batch.processing_completed_at = datetime.now(timezone.utc)
+        if errors:
+            batch.error_message = "; ".join(errors)[-512:]
+        self._log_activity(
+            actor_id=batch.created_by_user_id,
+            action_type="resume_enrichment_batch_created",
+            description=f"Completed resume enrichment batch {batch.batch_number}",
+            entity_type="review_batch",
+            entity_id=batch.id,
+            result="warning" if errors else "success",
+            metadata={"processed": processed, "errors": len(errors)},
+        )
+        self.review_batch_repository.session.commit()
 
     def get_review_batch(self, batch_id: UUID) -> ReviewBatch | None:
         """Get batch by ID."""
@@ -447,6 +470,7 @@ class ResumeEnrichmentService:
             review.write_back_status = "READY_TO_SEND" if any(
                 change.change_status == "APPROVED" for change in changes
             ) else "NOT_SENT"
+            self.review_batch_repository.refresh_candidate_counts(review.batch_id)
             self.review_batch_repository.session.flush()
 
     @staticmethod
@@ -519,6 +543,16 @@ class ResumeEnrichmentService:
             candidate_name=candidate.full_name,
             zoho_candidate_id=candidate.zoho_candidate_id,
         )
+        self._process_candidate_review(candidate_review, candidate, access_token, writable_fields)
+
+    def _process_candidate_review(
+        self,
+        candidate_review: CandidateReview,
+        candidate: Candidate,
+        access_token: str | None = None,
+        writable_fields: set[str] | None = None,
+    ) -> None:
+        """Extract and compare one candidate for an already-reserved review."""
 
         # Get candidate's resume file
         if not candidate.resume_url:
@@ -652,21 +686,65 @@ class ResumeEnrichmentService:
 
     def _get_extracted_value(self, extracted_data: dict[str, Any], field_path: str) -> Any:
         """Get nested values using dot notation and zero-based list notation."""
-        import re
-
         keys = [match.group(1) or match.group(0) for match in re.finditer(r"[^.\[\]]+|\[(\d+)\]", field_path)]
         value = extracted_data
 
         for key in keys:
             if isinstance(value, dict):
                 value = value.get(key)
+            elif isinstance(value, list) and key == "current":
+                value = self._select_current_experience(value)
             elif isinstance(value, list) and key.isdigit():
                 index = int(key)
                 value = value[index] if index < len(value) else None
             else:
                 return None
 
+        if field_path in {"experience.current.title", "experience.current.company"}:
+            return self._valid_employment_value(value)
         return value
+
+    @staticmethod
+    def _valid_employment_value(value: Any) -> str | None:
+        """Accept concise employment labels while excluding resume prose and extraction artifacts."""
+        if not isinstance(value, str):
+            return None
+
+        normalized = " ".join(value.split())
+        if not normalized or len(normalized) > 100 or len(normalized.split()) > 12:
+            return None
+        if re.search(r"[\n\r•]|\b(?:19|20)\d{2}\b", normalized):
+            return None
+
+        words = re.findall(r"[A-Za-z]+", normalized.lower())
+        if not words:
+            return None
+
+        prose_signals = sum(
+            word.endswith(("ing", "ed"))
+            for word in words
+        )
+        if prose_signals >= 2 or len(words) >= 8 and prose_signals:
+            return None
+        return normalized
+
+    @staticmethod
+    def _select_current_experience(experiences: list[Any]) -> dict[str, Any] | None:
+        """Return the active role, or the most recent dated role when it is not explicit."""
+        entries = [entry for entry in experiences if isinstance(entry, dict)]
+        if not entries:
+            return None
+
+        active_date_pattern = re.compile(r"\b(?:present|current|today|ongoing|till\s+date)\b", re.IGNORECASE)
+        for entry in entries:
+            if active_date_pattern.search(str(entry.get("dates") or "")):
+                return entry
+
+        def recency(entry: dict[str, Any]) -> int:
+            years = re.findall(r"\b(?:19|20)\d{2}\b", str(entry.get("dates") or ""))
+            return max((int(year) for year in years), default=-1)
+
+        return max(entries, key=recency)
 
     def _compare_values(self, zoho_value: Any, extracted_value: Any) -> dict[str, Any]:
         """

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 import {
   CandidateReview,
@@ -93,6 +94,27 @@ export class ResumeEnrichmentService {
     return this.http.post<Record<string, unknown>>(
       `${this.apiBaseUrl}/resume-enrichment/batches/${batchId}/write-back`,
       {}
+    );
+  }
+
+  downloadApprovedChangesAsExcel(): Observable<number> {
+    return this.http.get(`${this.apiBaseUrl}/resume-enrichment/export-approved`, {
+      responseType: 'blob',
+      observe: 'response',
+    }).pipe(
+      map((response) => {
+        const contentDisposition = response.headers.get('content-disposition') || '';
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=(['"]?)([^";\n]*)\1/);
+        const filename = filenameMatch ? filenameMatch[2] : 'zoho_candidate_updates.xlsx';
+        const blob = response.body || new Blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        window.URL.revokeObjectURL(url);
+        return Number(response.headers.get('x-exported-changes') || 0);
+      }),
     );
   }
 

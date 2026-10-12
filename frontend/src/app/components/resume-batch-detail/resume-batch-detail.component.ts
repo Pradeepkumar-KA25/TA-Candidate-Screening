@@ -27,6 +27,7 @@ export class ResumeBatchDetailComponent implements OnInit, OnDestroy {
   batchWriteBackLoading = false;
 
   private destroy$ = new Subject<void>();
+  private refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Expose Math for template usage
   Math = Math;
@@ -50,6 +51,7 @@ export class ResumeBatchDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.refreshTimer) clearTimeout(this.refreshTimer);
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -71,6 +73,7 @@ export class ResumeBatchDetailComponent implements OnInit, OnDestroy {
           this.batch = batch;
           this.total = batch.candidate_total;
           this.loading = false;
+          this.scheduleRefresh(batch.status);
         },
         error: (error) => {
           console.error('Error loading batch detail:', error);
@@ -117,6 +120,12 @@ export class ResumeBatchDetailComponent implements OnInit, OnDestroy {
     return Math.round((this.batch.processed_candidates / this.batch.total_candidates) * 100);
   }
 
+  private scheduleRefresh(status: ReviewBatchDetail['status']): void {
+    if (this.refreshTimer) clearTimeout(this.refreshTimer);
+    if (status !== 'PENDING' && status !== 'PROCESSING') return;
+    this.refreshTimer = setTimeout(() => this.loadBatchDetail(), 3000);
+  }
+
   /**
    * Get pending count.
    */
@@ -146,6 +155,10 @@ export class ResumeBatchDetailComponent implements OnInit, OnDestroy {
   getRejectedCount(): number {
     if (!this.batch) return 0;
     return this.batch.candidates.filter((c) => c.approval_status === 'REJECTED').length;
+  }
+
+  getExportStatusClass(status: string): string {
+    return `export-status-${status.toLowerCase()}`;
   }
 
   /**

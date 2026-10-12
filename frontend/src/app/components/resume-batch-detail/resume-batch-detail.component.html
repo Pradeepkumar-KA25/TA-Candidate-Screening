@@ -124,6 +124,7 @@
             <tr>
               <th>Candidate Name</th>
               <th>Status</th>
+              <th>Export Status</th>
               <th>Proposed Changes</th>
               <th>Pending Fields</th>
               <th>Reviewed At</th>
@@ -138,6 +139,11 @@
               <td>
                 <span [class]="'badge ' + getApprovalStatusClass(candidate.approval_status)">
                   {{ candidate.approval_status }}
+                </span>
+              </td>
+              <td>
+                <span [class]="'badge ' + getExportStatusClass(candidate.write_back_status)">
+                  {{ candidate.write_back_status }}
                 </span>
               </td>
               <td>

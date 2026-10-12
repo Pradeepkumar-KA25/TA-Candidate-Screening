@@ -33,6 +33,63 @@ def test_resolve_zoho_field_uses_existing_raw_payload_key() -> None:
     assert ResumeEnrichmentService._resolve_zoho_field(payload, ("Summary",)) is None
 
 
+def test_current_experience_value_prefers_open_ended_role() -> None:
+    service = ResumeEnrichmentService.__new__(ResumeEnrichmentService)
+    extracted_data = {
+        "experience": [
+            {"company": "Previous Employer", "title": "Engineer", "dates": "2019 - 2023"},
+            {"company": "Current Employer", "title": "Lead Engineer", "dates": "2023 - Present"},
+        ]
+    }
+
+    assert service._get_extracted_value(extracted_data, "experience.current.company") == "Current Employer"
+    assert service._get_extracted_value(extracted_data, "experience.current.title") == "Lead Engineer"
+
+
+def test_current_experience_value_uses_most_recent_dated_role_without_open_end() -> None:
+    service = ResumeEnrichmentService.__new__(ResumeEnrichmentService)
+    extracted_data = {
+        "experience": [
+            {"company": "Older Employer", "dates": "2016 - 2020"},
+            {"company": "Most Recent Employer", "dates": "2021 - 2025"},
+        ]
+    }
+
+    assert service._get_extracted_value(extracted_data, "experience.current.company") == "Most Recent Employer"
+
+
+def test_employment_fields_reject_prose_extraction_artifacts() -> None:
+    service = ResumeEnrichmentService.__new__(ResumeEnrichmentService)
+    extracted_data = {
+        "experience": [
+            {
+                "company": "Developed and maintained scalable data pipelines for reporting",
+                "title": "Led and delivered cross-functional initiatives for enterprise clients",
+                "dates": "2023 - Present",
+            }
+        ]
+    }
+
+    assert service._get_extracted_value(extracted_data, "experience.current.company") is None
+    assert service._get_extracted_value(extracted_data, "experience.current.title") is None
+
+
+def test_employment_fields_keep_concise_company_and_title_values() -> None:
+    service = ResumeEnrichmentService.__new__(ResumeEnrichmentService)
+    extracted_data = {
+        "experience": [
+            {
+                "company": "Northwind Digital Solutions Pvt. Ltd.",
+                "title": "Senior Data Engineer",
+                "dates": "2023 - Present",
+            }
+        ]
+    }
+
+    assert service._get_extracted_value(extracted_data, "experience.current.company") == "Northwind Digital Solutions Pvt. Ltd."
+    assert service._get_extracted_value(extracted_data, "experience.current.title") == "Senior Data Engineer"
+
+
 def test_write_back_payload_contains_only_approved_empty_writable_fields() -> None:
     approved_changes = [
         SimpleNamespace(zoho_field_api_name="Phone", proposed_value="+1 555 0100"),
