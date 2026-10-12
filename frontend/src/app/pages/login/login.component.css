@@ -3,8 +3,11 @@
 }
 
 .auth-note {
+  position: relative;
   color: #8593b8;
   font-size: 13px;
+  line-height: 1.5;
+  max-width: 400px;
 }
 
 .password-input {
@@ -34,8 +37,8 @@
 
 .password-toggle:hover,
 .password-toggle:focus-visible {
-  color: #2f5af2;
-  background: #eef2ff;
+  color: var(--blue-600);
+  background: var(--blue-50);
   outline: none;
 }
 
@@ -79,7 +82,7 @@
   margin-bottom: 12px;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 860px) {
   .auth-screen {
     grid-template-columns: 1fr;
   }

@@ -4,11 +4,20 @@
     <button
       class="btn btn-primary"
       (click)="openBatchSizeDialog()"
-      [disabled]="creating || loading"
+      [disabled]="creating || exporting || loading"
       title="Create a new batch of candidates for review"
     >
       <span *ngIf="!creating">Create New Batch</span>
       <span *ngIf="creating">Creating...</span>
+    </button>
+    <button
+      class="btn btn-secondary"
+      (click)="exportApprovedChanges()"
+      [disabled]="exporting || creating || loading"
+      title="Download all approved, unexported changes as a Zoho Recruit Excel file"
+    >
+      <span *ngIf="!exporting">Export Approved Changes</span>
+      <span *ngIf="exporting">Preparing Excel...</span>
     </button>
   </div>
 

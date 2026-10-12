@@ -20,6 +20,7 @@ export class ResumeBatchListComponent implements OnInit, OnDestroy {
   batches: ReviewBatch[] = [];
   loading = false;
   creating = false;
+  exporting = false;
   showBatchSizeDialog = false;
   showLargeBatchWarning = false;
   allowLargeBatchCreation = false;
@@ -31,6 +32,7 @@ export class ResumeBatchListComponent implements OnInit, OnDestroy {
   total = 0;
 
   private destroy$ = new Subject<void>();
+  private refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private resumeEnrichmentService: ResumeEnrichmentService,
@@ -46,6 +48,7 @@ export class ResumeBatchListComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.refreshTimer) clearTimeout(this.refreshTimer);
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -65,6 +68,7 @@ export class ResumeBatchListComponent implements OnInit, OnDestroy {
           this.batches = response.batches;
           this.total = response.total;
           this.loading = false;
+          this.scheduleRefresh(response.batches);
         },
         error: (error) => {
           console.error('Error loading batches:', error);
@@ -131,7 +135,7 @@ export class ResumeBatchListComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (batch) => {
           this.creating = false;
-          this.notificationService.success(`Batch ${batch.batch_number} was created.`, 'Resume enrichment');
+          this.notificationService.success(`Batch ${batch.batch_number} is processing in the background.`, 'Resume enrichment');
           // Navigate to batch detail
           this.router.navigate(['/resume-enrichment/batches', batch.id]);
         },
@@ -151,6 +155,37 @@ export class ResumeBatchListComponent implements OnInit, OnDestroy {
     this.router.navigate(['/resume-enrichment/batches', batchId]);
   }
 
+  exportApprovedChanges(): void {
+    if (this.exporting) return;
+    this.exporting = true;
+    this.error = null;
+
+    this.resumeEnrichmentService
+      .downloadApprovedChangesAsExcel()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (count) => {
+          this.exporting = false;
+          this.notificationService.success(
+            `Downloaded ${count} approved field change${count === 1 ? '' : 's'} for Zoho Recruit.`,
+            'Resume enrichment',
+          );
+          this.loadBatches();
+        },
+        error: (error) => {
+          this.exporting = false;
+          const detail = typeof error?.error?.detail === 'string' ? error.error.detail : null;
+          const message = detail || 'No approved changes are available for export.';
+          if (error?.status === 409) {
+            this.notificationService.warning(message, 'Nothing to export');
+            return;
+          }
+          this.error = message;
+          this.notificationService.error(message, 'Resume enrichment');
+        },
+      });
+  }
+
   /**
    * Get status badge CSS class.
    */
@@ -164,6 +199,12 @@ export class ResumeBatchListComponent implements OnInit, OnDestroy {
   getProgressPercentage(batch: ReviewBatch): number {
     if (batch.total_candidates === 0) return 0;
     return Math.round((batch.processed_candidates / batch.total_candidates) * 100);
+  }
+
+  private scheduleRefresh(batches: ReviewBatch[]): void {
+    if (this.refreshTimer) clearTimeout(this.refreshTimer);
+    if (!batches.some((batch) => batch.status === 'PENDING' || batch.status === 'PROCESSING')) return;
+    this.refreshTimer = setTimeout(() => this.loadBatches(), 3000);
   }
 
   /**
