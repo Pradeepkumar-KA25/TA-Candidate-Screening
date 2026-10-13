@@ -21,6 +21,10 @@ export class AppLayoutComponent {
   headerContext = 'Dashboard';
   statusState: 'connected' | 'disconnected' = 'disconnected';
 
+  get isAdmin(): boolean {
+    return this.authService.isAdmin();
+  }
+
   constructor(
     readonly router: Router,
     private readonly authService: AuthService,

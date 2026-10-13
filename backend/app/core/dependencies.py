@@ -370,7 +370,8 @@ def get_current_recruiter(
 
 def require_roles(*allowed_roles: str) -> Callable[[User], User]:
     def role_dependency(current_recruiter: User = Depends(get_current_recruiter)) -> User:
-        if current_recruiter.role not in allowed_roles:
+        effective_role = "Admin" if current_recruiter.role == "Super Admin" else current_recruiter.role
+        if effective_role not in allowed_roles:
             raise AccessDeniedError()
         return current_recruiter
 

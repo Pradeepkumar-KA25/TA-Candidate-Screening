@@ -18,7 +18,7 @@ from fastapi import (
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db_session
-from app.core.dependencies import get_current_recruiter
+from app.core.dependencies import get_current_recruiter, require_roles
 from app.models.user import User
 from app.models.template_spec import TemplateSpec
 from app.repositories.template_repository import KaniniUserTemplateRepository
@@ -47,7 +47,7 @@ def _draft_prefix(user_id: uuid.UUID, draft_id: str) -> str:
 @router.post("/drafts")
 async def create_template_draft(
     file: UploadFile = File(...),
-    current_recruiter: User = Depends(get_current_recruiter),
+    current_recruiter: User = Depends(require_roles("Admin")),
     storage: StorageBackend = Depends(get_storage_backend),
 ):
     """
@@ -103,7 +103,7 @@ async def create_template_draft(
 @router.post("/drafts/{draft_id}/generate")
 async def generate_template_from_draft(
     draft_id: str,
-    current_recruiter: User = Depends(get_current_recruiter),
+    current_recruiter: User = Depends(require_roles("Admin")),
     storage: StorageBackend = Depends(get_storage_backend),
 ):
     """
@@ -161,7 +161,7 @@ async def save_template_from_draft(
     draft_id: str,
     name: str = Form(...),
     description: str = Form(""),
-    current_recruiter: User = Depends(get_current_recruiter),
+    current_recruiter: User = Depends(require_roles("Admin")),
     db: Session = Depends(get_db_session),
     storage: StorageBackend = Depends(get_storage_backend),
 ):

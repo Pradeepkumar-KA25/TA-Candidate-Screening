@@ -36,7 +36,7 @@ sync_router = APIRouter()
 )
 async def trigger_candidate_sync(
     background_tasks: BackgroundTasks,
-    current_recruiter: User = Depends(require_roles("Recruiter", "Admin")),
+    current_recruiter: User = Depends(require_roles("Admin")),
     sync_service: SyncService = Depends(get_sync_service),
 ) -> CandidateSyncTriggerResponse:
     trigger_response = sync_service.start_sync(current_recruiter.id)
@@ -52,7 +52,7 @@ async def trigger_candidate_sync(
     description="Returns recent sync runs with record counts, duration fields, and errors.",
 )
 async def get_sync_history(
-    current_recruiter: User = Depends(require_roles("Recruiter", "Admin")),
+    current_recruiter: User = Depends(require_roles("Admin")),
     limit: int = Query(6, ge=1, le=20),
     sync_service: SyncService = Depends(get_sync_service),
 ) -> CandidateSyncHistoryResponse:
@@ -73,7 +73,7 @@ async def get_sync_history(
 )
 async def get_candidate_sync_status(
     sync_id: UUID,
-    _: User = Depends(require_roles("Recruiter", "Admin")),
+    _: User = Depends(require_roles("Admin")),
     sync_service: SyncService = Depends(get_sync_service),
 ) -> CandidateSyncStatusResponse:
     return sync_service.get_sync_status(sync_id)
@@ -93,7 +93,7 @@ async def get_candidate_sync_status(
 )
 async def get_candidate_sync_summary(
     sync_id: UUID,
-    _: User = Depends(require_roles("Recruiter", "Admin")),
+    _: User = Depends(require_roles("Admin")),
     sync_service: SyncService = Depends(get_sync_service),
 ) -> CandidateSyncSummaryResponse:
     return sync_service.get_sync_summary(sync_id)

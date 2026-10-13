@@ -29,7 +29,7 @@
   <div *ngIf="!loading && users.length === 0" class="empty-state">No users found.</div>
   <div *ngIf="!loading && users.length > 0" class="table-wrap">
     <table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last login</th><th>Action</th></tr></thead>
-      <tbody><tr *ngFor="let user of users"><td>{{ user.full_name }}</td><td>{{ user.email }}</td><td>{{ user.role }}</td><td><span [class.active-status]="user.is_active">{{ user.is_active ? 'Active' : 'Inactive' }}</span></td><td>{{ user.last_login_at ? (user.last_login_at | date:'medium') : 'Never' }}</td><td class="actions"><button class="secondary-button" type="button" (click)="beginEdit(user)">Edit</button><button class="secondary-button" type="button" (click)="beginReset(user)">Reset password</button><button class="secondary-button" type="button" (click)="toggle(user)">{{ user.is_active ? 'Deactivate' : 'Activate' }}</button></td></tr></tbody>
+      <tbody><tr *ngFor="let user of users"><td>{{ user.full_name }}</td><td>{{ user.email }}</td><td>{{ displayRole(user.role) }}</td><td><span [class.active-status]="user.is_active">{{ user.is_active ? 'Active' : 'Inactive' }}</span></td><td>{{ user.last_login_at ? (user.last_login_at | date:'medium') : 'Never' }}</td><td class="actions"><button class="secondary-button" type="button" (click)="beginEdit(user)">Edit</button><button class="secondary-button" type="button" (click)="beginReset(user)">Reset password</button><button class="secondary-button" type="button" (click)="toggle(user)">{{ user.is_active ? 'Deactivate' : 'Activate' }}</button></td></tr></tbody>
     </table>
   </div>
 </section>

@@ -110,6 +110,10 @@ export class DashboardComponent implements OnInit {
     return this.zohoStatus?.connection_state === 'connected';
   }
 
+  get isAdmin(): boolean {
+    return this.authService.isAdmin();
+  }
+
   get formattedSyncTime(): string {
     if (!this.zohoStatus?.last_successful_sync_at) {
       return 'Not synced yet';

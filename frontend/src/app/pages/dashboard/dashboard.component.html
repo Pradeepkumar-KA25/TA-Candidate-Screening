@@ -47,7 +47,7 @@
           <div><span>Added / updated</span><strong>{{ stats?.last_sync_new || 0 }} / {{ stats?.last_sync_updated || 0 }}</strong></div>
           <div><span>Errors</span><strong>{{ stats?.last_sync_errors || 0 }}</strong></div>
         </div>
-        <a class="primary-action" routerLink="/sync-candidates" [class.disabled]="!isConnected">Sync Candidates</a>
+        <a *ngIf="isAdmin" class="primary-action" routerLink="/sync-candidates" [class.disabled]="!isConnected">Sync Candidates</a>
       </article>
 
       <article class="panel quick-actions-panel">
@@ -60,9 +60,9 @@
         <div class="quick-actions">
           <a routerLink="/resume-generator/upload" class="quick-action">Create Resume</a>
           <a routerLink="/my-resumes" class="quick-action">My Resumes</a>
-          <a routerLink="/create-template" class="quick-action">Create Template</a>
+          <a *ngIf="isAdmin" routerLink="/create-template" class="quick-action">Create Template</a>
           <a routerLink="/candidates" class="quick-action">View Candidates</a>
-          <a routerLink="/sync-candidates" class="quick-action">Sync Candidates</a>
+          <a *ngIf="isAdmin" routerLink="/sync-candidates" class="quick-action">Sync Candidates</a>
           <a routerLink="/filters" class="quick-action">Create Filter</a>
           <a routerLink="/shortlists" class="quick-action">Shortlist</a>
           <a routerLink="/duplicates" class="quick-action">Duplicates</a>
@@ -102,7 +102,7 @@
         <ng-template #allClear><div class="activity-empty">No urgent follow-ups right now.</div></ng-template>
       </article>
 
-      <article class="panel dashboard-panel enrichment-panel">
+      <article *ngIf="isAdmin" class="panel dashboard-panel enrichment-panel">
         <div class="panel-header">
           <div><h2>Resume Enrichment</h2><p>Review activity from extracted candidate data.</p></div>
           <a class="panel-link" routerLink="/resume-enrichment/batches">Open queue</a>
@@ -115,7 +115,7 @@
         </div>
       </article>
 
-      <article class="panel dashboard-panel">
+      <article *ngIf="isAdmin" class="panel dashboard-panel">
         <div class="panel-header"><div><h2>Activity Volume</h2><p>Most frequent recorded actions.</p></div><a class="panel-link" routerLink="/audit-logs">Audit log</a></div>
         <div class="breakdown-list" *ngIf="(dashboardStats.activity_summary?.length || 0) > 0; else noActivitySummary">
           <div class="breakdown-item" *ngFor="let item of dashboardStats.activity_summary || []"><span>{{ item.label | titlecase }}</span><strong>{{ item.count | number }}</strong></div>

@@ -36,7 +36,7 @@ export class SettingsComponent {
 
   ngOnInit(): void {
     this.authService.currentUser$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((user) => {
-      this.isAdmin = user?.role === 'Admin';
+      this.isAdmin = this.authService.isAdmin();
       this.integrationService
         .getZohoStatus()
         .pipe(takeUntilDestroyed(this.destroyRef))

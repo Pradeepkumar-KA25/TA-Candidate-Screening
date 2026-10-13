@@ -50,7 +50,7 @@ async def get_zoho_status(
 )
 async def update_zoho_auto_sync(
     settings: AutoSyncSettingsRequest,
-    _: User = Depends(require_roles("Recruiter", "Admin")),
+    _: User = Depends(require_roles("Admin")),
     integration_service: IntegrationService = Depends(get_integration_service),
 ) -> ZohoIntegrationStatusResponse:
     return integration_service.update_auto_sync_settings(settings.auto_sync_enabled, settings.auto_sync_interval_minutes)
@@ -96,7 +96,7 @@ async def save_zoho_credentials(
     ),
 )
 async def get_zoho_candidate_diagnostics(
-    _: User = Depends(require_roles("Recruiter", "Admin")),
+    _: User = Depends(require_roles("Admin")),
     integration_service: IntegrationService = Depends(get_integration_service),
 ) -> ZohoCandidateDiagnosticsResponse:
     return integration_service.get_zoho_candidate_diagnostics()

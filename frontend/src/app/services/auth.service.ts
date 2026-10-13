@@ -64,6 +64,15 @@ export class AuthService {
     return this.sessionSubject.value?.token ?? null;
   }
 
+  getCurrentUser(): RecruiterProfile | null {
+    return this.currentUserSubject.value;
+  }
+
+  isAdmin(): boolean {
+    const role = this.getCurrentUser()?.role?.trim().toLowerCase();
+    return role === 'admin' || role === 'super admin' || role === 'super_admin';
+  }
+
   isAuthenticated(): boolean {
     const token = this.getAccessToken();
     if (!token) {

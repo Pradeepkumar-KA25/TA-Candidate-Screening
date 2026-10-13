@@ -54,6 +54,7 @@ export class AppShellComponent implements OnInit {
   @Input() statusState: 'connected' | 'disconnected' = 'disconnected';
   @Input() recruiterName = 'Recruiter';
   @Input() recruiterInitials = 'RK';
+  @Input() isAdmin = false;
 
   @Output() logoutRequested = new EventEmitter<void>();
 
