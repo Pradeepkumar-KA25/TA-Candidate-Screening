@@ -42,7 +42,7 @@ LOCATION_INDICATORS = {
     "remote", "onsite", "hybrid", "work from home", "wfh"
 }
 
-BULLET_PATTERN = re.compile(r"^[\s•\-\*\→\►\–]*\s+")
+BULLET_PATTERN = re.compile(r"^[\s]*(?:[•\u2022\u2023\u25E6\u2043\u2219\uf0b7\-\*\→\►\–])\s*")
 
 
 def _extract_dates_from_line(line: str) -> Tuple[str, str]:
@@ -147,7 +147,8 @@ def _is_job_title(text: str) -> bool:
 
 def _is_company_name(text: str) -> bool:
     """Check if text looks like a company name."""
-    if not text or _is_location(text) or _is_job_title(text):
+    text = text.strip()
+    if not text or BULLET_PATTERN.match(text) or DATE_PATTERN.search(text) or _is_location(text) or _is_job_title(text):
         return False
     
     # Known companies
@@ -163,6 +164,16 @@ def _is_company_name(text: str) -> bool:
         lower = text.lower()
         if lower in known_companies:
             return True
+        if text.isupper() and len(text.split()) <= 3:
+            return False
+        if len(text.split()) > 6 or re.search(r"[.!?]$", text):
+            return False
+        if re.search(
+            r"\b(?:served|developed|built|created|implemented|coordinated|managed|supported|"
+            r"monitored|conducted|executed|used|led|worked|assisted)\b",
+            lower,
+        ):
+            return False
         # Accepts alphanumeric company-like patterns
         if re.match(r"^[A-Z][A-Za-z0-9\s\-&.()]*$", text) and len(text) > 1:
             return True
@@ -228,12 +239,32 @@ def _group_experience_lines(lines: List[str]) -> List[List[str]]:
         # Check if this is a company+location line
         left, right = _split_line_left_right(line)
         is_company_line = _is_company_name(left) and (not right or _is_location(right))
+
+        # Some PDFs place the next date row before the next employer name.
+        if current_group and DATE_PATTERN.fullmatch(line) and i < len(lines):
+            next_line = (lines[i] or "").strip()
+            next_left, next_right = _split_line_left_right(next_line)
+            next_is_company = _is_company_name(next_left) and (not next_right or _is_location(next_right))
+            current_has_date = any(DATE_PATTERN.search(item) for item in current_group)
+            if current_has_date and next_is_company:
+                groups.append(current_group)
+                current_group = [next_line, line]
+                i += 1
+                continue
+
+        # Inline rows such as "Role | Dates | Company | Location" start a job.
+        inline_date = bool(DATE_PATTERN.search(line)) and "|" in line
+        inline_job = inline_date and any(_is_job_title(part.strip()) for part in line.split("|"))
+
+        if current_group and (is_company_line or inline_job):
+            groups.append(current_group)
+            current_group = []
+
+        if inline_job:
+            current_group = [line]
+            continue
         
         if is_company_line:
-            # Save previous group if any
-            if current_group:
-                groups.append(current_group)
-            
             # Start new group with company+location line
             current_group = [line]
             
@@ -246,7 +277,7 @@ def _group_experience_lines(lines: List[str]) -> List[List[str]]:
                     # This role+dates line belongs with current company line
                     current_group.append(next_line)
                     i += 1  # Skip the role+dates line, it's now grouped
-        else:
+        elif current_group:
             # Not a company line - could be role+dates, bullet, or other
             current_group.append(line)
     
@@ -297,6 +328,20 @@ def parse_experience_multiline(lines: List[str]) -> List[Dict]:
             "dates": "",
             "responsibilities": []
         }
+
+        first_line = group[0].strip()
+        if DATE_PATTERN.search(first_line) and "|" in first_line:
+            date_str, remaining = _extract_dates_from_line(first_line)
+            parts = [part.strip() for part in remaining.split("|") if part.strip()]
+            title_part = next((part for part in parts if _is_job_title(part)), "")
+            company_part = next((part for part in parts if part != title_part and not _is_location(part)), "")
+            location_part = next((part for part in parts if _is_location(part)), "")
+            current_exp.update(
+                title=title_part,
+                company=company_part,
+                location=location_part,
+                dates=date_str,
+            )
         
         for i, line in enumerate(group):
             line = line.strip()
@@ -305,6 +350,21 @@ def parse_experience_multiline(lines: List[str]) -> List[Dict]:
             
             # Skip bullet points for now (we'll collect them later)
             if BULLET_PATTERN.match(line):
+                continue
+
+            if i == 0 and current_exp["company"]:
+                continue
+
+            if not current_exp["dates"]:
+                date_str, remaining = _extract_dates_from_line(line)
+                if date_str:
+                    current_exp["dates"] = date_str
+                    if remaining and not current_exp["title"] and _is_job_title(remaining):
+                        current_exp["title"] = remaining.rstrip("|").strip()
+                    continue
+
+            if not current_exp["title"] and _is_job_title(line):
+                current_exp["title"] = line.rstrip("|").strip()
                 continue
             
             # First line should be company + location
@@ -339,18 +399,31 @@ def parse_experience_multiline(lines: List[str]) -> List[Dict]:
                                 current_exp["title"] = right
                 continue
         
-        # Collect all responsibility bullet points from the group
+        # Collect bullet points and wrapped continuation lines from the group.
+        in_responsibilities = False
         for line in group:
             line = line.strip()
             if BULLET_PATTERN.match(line):
                 resp = BULLET_PATTERN.sub("", line).strip()
+                in_responsibilities = True
                 if resp:
                     current_exp["responsibilities"].append(resp)
+                continue
+            if in_responsibilities and not re.match(
+                r"^(?:Client|Project|Environment|Technologies?|Role|Description)\s*[:\-]",
+                line,
+                re.IGNORECASE,
+            ):
+                current_exp["responsibilities"].append(line)
         
         # Add if has meaningful data
         if current_exp["company"] or current_exp["title"]:
             experiences.append(current_exp)
     
+    for index, experience in enumerate(experiences):
+        if not experience.get("company") and index > 0:
+            experience["company"] = experiences[index - 1].get("company", "")
+
     return experiences
 
 
@@ -429,13 +502,21 @@ def parse_projects_multiline(lines: List[str]) -> List[Dict]:
             current = new_project(field_match.group(2))
             continue
 
+        if BULLET_PATTERN.match(line):
+            continue
+
         if current is None:
             following = next_meaningful(index + 1)
             first_title = not projects and len(line.split()) <= 12 and not line.endswith((".", ";"))
-            if len(line) <= 100 and (
+            is_pipe_title = "|" in line and len(line) <= 180
+            if is_pipe_title or (len(line) <= 100 and (
                 first_title or field_pattern.match(following) or BULLET_PATTERN.match(following)
-            ):
-                current = new_project(line)
+            )):
+                parts = [part.strip() for part in line.split("|") if part.strip()]
+                current = new_project(parts[0])
+                current["technologies"].extend(
+                    item.strip() for item in re.split(r"[,;/]", " | ".join(parts[1:])) if item.strip()
+                )
             continue
 
         if field_match:
@@ -464,6 +545,16 @@ def parse_projects_multiline(lines: List[str]) -> List[Dict]:
                 current["responsibilities"].append(detail)
             continue
 
+        following = next_meaningful(index + 1)
+        if current and "|" in line and len(line) <= 140:
+            flush()
+            parts = [part.strip() for part in line.split("|") if part.strip()]
+            current = new_project(parts[0])
+            current["technologies"].extend(
+                item.strip() for item in re.split(r"[,;/]", " | ".join(parts[1:])) if item.strip()
+            )
+            continue
+
         dates, remaining = _extract_dates_from_line(line)
         if dates and not current["dates"]:
             current["dates"] = dates
@@ -473,7 +564,6 @@ def parse_projects_multiline(lines: List[str]) -> List[Dict]:
                 current["description"] = (current["description"] + " " + remaining).strip()
             continue
 
-        following = next_meaningful(index + 1)
         if field_pattern.match(following) and len(line) <= 100:
             flush()
             current = new_project(line)

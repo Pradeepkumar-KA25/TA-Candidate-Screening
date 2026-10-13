@@ -45,7 +45,8 @@ Return ONLY valid JSON with this exact shape and no markdown or explanation:
   "achievements":[]
 }
 
-Before returning, verify every experience title is a role, every company is an employer, no labels appear as values, projects are associated with the correct job when the resume provides that relationship, and skills contain only atomic skills."""
+Before returning, verify every experience title is a role, every company is an employer, no labels appear as values, projects are associated with the correct job when the resume provides that relationship, and skills contain only atomic skills.
+Exhaustiveness is required: scan the entire supplied resume, return every distinct employment entry and every distinct project, and do not stop after the first few entries. Keep the order in which jobs and projects appear. If a project is under an employment entry, keep it in that entry's projects array and include it at top level only when it cannot be associated with an employer."""
 
 
 def _configured_model_names() -> list[str]:
@@ -147,7 +148,16 @@ def parse_resume_with_ollama(
     selected_model: str | None = None,
     timeout_seconds: float | None = None,
 ) -> tuple[dict[str, Any], str]:
-    prompt = f"{_RESUME_SYSTEM_PROMPT}\n\nParse this resume completely:\n\n{raw_text[:14000]}"
+    max_resume_chars = 50000
+    if len(raw_text) > max_resume_chars:
+        half = max_resume_chars // 2
+        resume_text = (
+            f"{raw_text[:half]}\n\n[...middle of resume retained by deterministic parser...]\n\n"
+            f"{raw_text[-half:]}"
+        )
+    else:
+        resume_text = raw_text
+    prompt = f"{_RESUME_SYSTEM_PROMPT}\n\nParse this resume completely:\n\n{resume_text}"
     result, model = generate_json(prompt, selected_model, timeout_seconds=timeout_seconds)
     return _normalise_resume(result, raw_text), model
 
