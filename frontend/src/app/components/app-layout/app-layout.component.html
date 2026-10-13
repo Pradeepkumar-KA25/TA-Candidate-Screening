@@ -2,6 +2,7 @@
   [activeNav]="activeNav"
   [headerContext]="headerContext"
   [statusState]="statusState"
+  [isAdmin]="isAdmin"
   (logoutRequested)="onLogout()"
 >
   <router-outlet (activate)="updateRouteContext(router.url)"></router-outlet>

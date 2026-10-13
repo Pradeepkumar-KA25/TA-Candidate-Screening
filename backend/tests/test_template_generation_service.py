@@ -1,10 +1,4 @@
-import json
-
-import pytest
-
-from app.core.config import settings
-from app.services import ollama_service
-from app.services.template_generation_service import TemplateGenerationError, generate_template_spec
+from app.services.template_generation_service import generate_template_spec
 from app.services.template_spec_renderer import render_docx, render_html, render_pdf
 
 
@@ -19,13 +13,7 @@ VALID_SPEC = {
 }
 
 
-def test_generate_and_render_template_spec(monkeypatch) -> None:
-    monkeypatch.setattr(ollama_service.settings, "ollama_base_url", "http://ollama.test")
-    monkeypatch.setattr(ollama_service.settings, "ollama_model", "llama3.1")
-    monkeypatch.setattr(
-        "app.services.template_generation_service.generate_json",
-        lambda *_args, **_kwargs: (VALID_SPEC, "llama3.1"),
-    )
+def test_generate_and_render_template_spec() -> None:
     spec = generate_template_spec({"summary": "Engineer"})
     resume = {
         "contact": {"name": "Asha Sharma"},
@@ -39,11 +27,9 @@ def test_generate_and_render_template_spec(monkeypatch) -> None:
     assert render_pdf(resume, spec).startswith(b"%PDF")
 
 
-def test_generated_template_rejects_unsafe_fields(monkeypatch) -> None:
-    monkeypatch.setattr(
-        "app.services.template_generation_service.generate_json",
-        lambda *_args, **_kwargs: ({**VALID_SPEC, "script": "alert(1)"}, "llama3.1"),
-    )
+def test_template_spec_uses_only_available_sections() -> None:
+    spec = generate_template_spec({"experience": [{"title": "Developer"}], "projects": []})
 
-    with pytest.raises(TemplateGenerationError):
-        generate_template_spec({})
+    assert spec.sections == ["experience"]
+    assert spec.layout.columns == 1
+    assert spec.header.layout == "centered"

@@ -25,7 +25,7 @@ async def list_audit_logs(
     result: str | None = Query(None, min_length=1, max_length=32),
     occurred_from: datetime | None = None,
     occurred_to: datetime | None = None,
-    _: User = Depends(require_roles("Recruiter", "Admin")),
+    _: User = Depends(require_roles("Admin")),
     repository: ActivityLogRepository = Depends(get_activity_log_repository),
 ) -> AuditLogResponse:
     entries, total = repository.list_audit_entries(

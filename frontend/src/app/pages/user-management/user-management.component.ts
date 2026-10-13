@@ -59,7 +59,11 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   beginEdit(user: ManagedUser): void {
     this.editingUser = user;
     this.editName = user.full_name;
-    this.editRole = user.role;
+    this.editRole = user.role === 'Recruiter' ? 'Recruiter' : 'Admin';
+  }
+
+  displayRole(role: ManagedUser['role']): 'Recruiter' | 'Admin' {
+    return role === 'Recruiter' ? 'Recruiter' : 'Admin';
   }
 
   saveEdit(): void {

@@ -168,7 +168,10 @@ def _merge_experience_sections(deterministic_values: Any, ai_values: Any) -> lis
         responsibilities = [*match.get("responsibilities", []), *ai_item.get("responsibilities", [])]
         match["responsibilities"] = list(dict.fromkeys(value for value in responsibilities if value))
         if ai_item.get("projects"):
-            match["projects"] = ai_item["projects"]
+            match["projects"] = _merge_project_sections(
+                match.get("projects", []),
+                ai_item["projects"],
+            )
     return merged
 
 
@@ -182,7 +185,10 @@ def _project_key(value: dict[str, Any]) -> str:
 
 
 def _valid_project(value: dict[str, Any]) -> bool:
-    if not str(value.get("name") or "").strip():
+    name = str(value.get("name") or "").strip()
+    if not name or re.sub(r"[^a-z0-9]+", "", name.casefold()) in {
+        "project", "projectname", "bullet",
+    }:
         return False
     return any(
         value.get(field)

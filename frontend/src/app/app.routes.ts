@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 
 import { authGuard } from './guards/auth.guard';
+import { adminGuard } from './guards/admin.guard';
 import { AppLayoutComponent } from './components/app-layout/app-layout.component';
 import { CandidateFieldsViewComponent } from './pages/candidate-fields-view/candidate-fields-view.component';
 import { CandidatesComponent } from './pages/candidates/candidates.component';
@@ -41,8 +42,8 @@ export const routes: Routes = [
 		canActivate: [authGuard],
 		children: [
 			{ path: 'dashboard', component: DashboardComponent },
-			{ path: 'audit-logs', component: AuditLogComponent },
-			{ path: 'users', component: UserManagementComponent },
+			{ path: 'audit-logs', component: AuditLogComponent, canActivate: [adminGuard] },
+			{ path: 'users', component: UserManagementComponent, canActivate: [adminGuard] },
 			{ path: 'candidates', component: CandidatesComponent },
 			{ path: 'candidates/:id', component: CandidateFieldsViewComponent },
 			{ path: 'filters', component: FiltersComponent },
@@ -51,7 +52,7 @@ export const routes: Routes = [
 			{ path: 'export-success', component: ExportSuccessComponent },
 			{ path: 'duplicates', component: DuplicatesComponent },
 			{ path: 'my-resumes', component: MyResumesComponent },
-			{ path: 'create-template', component: CreateTemplateComponent },
+			{ path: 'create-template', component: CreateTemplateComponent, canActivate: [adminGuard] },
 			{
 				path: 'resume-generator',
 				component: ResumeGeneratorLayoutComponent,
@@ -66,10 +67,11 @@ export const routes: Routes = [
 			{ path: 'settings', component: SettingsComponent },
 			{
 				path: 'resume-enrichment',
+				canActivate: [adminGuard],
 				children: RESUME_ENRICHMENT_ROUTES,
 			},
-			{ path: 'sync-candidates', component: SyncCandidatesComponent },
-			{ path: 'sync-complete/:syncId', component: SyncCompleteComponent },
+			{ path: 'sync-candidates', component: SyncCandidatesComponent, canActivate: [adminGuard] },
+			{ path: 'sync-complete/:syncId', component: SyncCompleteComponent, canActivate: [adminGuard] },
 		],
 	},
 	{

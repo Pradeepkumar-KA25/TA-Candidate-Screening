@@ -68,6 +68,24 @@ def test_parse_resume_rejects_invalid_ollama_json(monkeypatch) -> None:
         ollama_service.parse_resume_with_ollama("resume")
 
 
+def test_parse_resume_prompt_keeps_resume_tail_for_long_input(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "ollama_base_url", "http://ollama.test")
+    monkeypatch.setattr(settings, "ollama_model", "llama3.1")
+    captured = {}
+
+    def fake_urlopen(request, timeout):
+        captured["prompt"] = json.loads(request.data.decode("utf-8"))["prompt"]
+        return _Response({"response": json.dumps({"contact": {"name": "Asha"}})})
+
+    monkeypatch.setattr(ollama_service.urllib.request, "urlopen", fake_urlopen)
+
+    ollama_service.parse_resume_with_ollama("BEGIN\n" + ("x" * 60000) + "\nEND")
+
+    assert "BEGIN" in captured["prompt"]
+    assert "END" in captured["prompt"]
+    assert "middle of resume retained" in captured["prompt"]
+
+
 def test_model_options_come_from_settings(monkeypatch) -> None:
     monkeypatch.setattr(settings, "ollama_base_url", "http://ollama.test")
     monkeypatch.setattr(settings, "ollama_model", "llama3.1")

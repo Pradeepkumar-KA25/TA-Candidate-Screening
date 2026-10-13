@@ -42,7 +42,7 @@ router = APIRouter(prefix="/resume-enrichment", tags=["resume-enrichment"])
 )
 def export_approved_changes(
     session=Depends(get_db_session),
-    current_user: User = Depends(require_roles("Recruiter", "Admin")),
+    current_user: User = Depends(require_roles("Admin")),
 ) -> Response:
     try:
         file_bytes, filename, exported_count = BatchExcelExportService(session).export_approved_changes(current_user.id)
@@ -70,7 +70,7 @@ def create_review_batch(
     request: CreateReviewBatchRequest,
     background_tasks: BackgroundTasks,
     service: ResumeEnrichmentService = Depends(get_resume_enrichment_service),
-    current_user: User = Depends(require_roles("Recruiter", "Admin")),
+    current_user: User = Depends(require_roles("Admin")),
 ) -> ReviewBatchResponse:
     """
     Create a new review batch.
@@ -114,7 +114,7 @@ def list_review_batches(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
     service: ResumeEnrichmentService = Depends(get_resume_enrichment_service),
-    current_user: User = Depends(require_roles("Recruiter", "Admin")),
+    current_user: User = Depends(require_roles("Admin")),
 ) -> ReviewBatchListResponse:
     """
     Get paginated list of review batches.
@@ -148,7 +148,7 @@ def get_review_batch_detail(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     service: ResumeEnrichmentService = Depends(get_resume_enrichment_service),
-    current_user: User = Depends(require_roles("Recruiter", "Admin")),
+    current_user: User = Depends(require_roles("Admin")),
 ) -> ReviewBatchDetailResponse:
     """
     Get batch details with paginated candidate reviews.
@@ -204,7 +204,7 @@ def get_review_batch_detail(
 def delete_review_batch(
     batch_id: UUID,
     service: ResumeEnrichmentService = Depends(get_resume_enrichment_service),
-    current_user: User = Depends(require_roles("Recruiter", "Admin")),
+    current_user: User = Depends(require_roles("Admin")),
     activity_log_repository: ActivityLogRepository = Depends(get_activity_log_repository),
 ):
     """
@@ -248,7 +248,7 @@ def delete_review_batch(
 def send_approved_batch_changes(
     batch_id: UUID,
     service: ResumeEnrichmentService = Depends(get_resume_enrichment_service),
-    current_user: User = Depends(require_roles("Recruiter", "Admin")),
+    current_user: User = Depends(require_roles("Admin")),
 ) -> dict:
     try:
         return service.send_approved_batch(batch_id, actor_id=current_user.id)
@@ -265,7 +265,7 @@ def send_approved_batch_changes(
 def get_candidate_review_details(
     candidate_review_id: UUID,
     service: ResumeEnrichmentService = Depends(get_resume_enrichment_service),
-    current_user: User = Depends(require_roles("Recruiter", "Admin")),
+    current_user: User = Depends(require_roles("Admin")),
 ) -> CandidateReviewResponse:
     """
     Get candidate review details with all proposed changes.
@@ -302,7 +302,7 @@ def get_candidate_review_details(
 def preview_approved_changes(
     candidate_review_id: UUID,
     service: ResumeEnrichmentService = Depends(get_resume_enrichment_service),
-    current_user: User = Depends(require_roles("Recruiter", "Admin")),
+    current_user: User = Depends(require_roles("Admin")),
 ) -> dict:
     """Return the locally prepared payload; this endpoint never calls a Zoho write API."""
     try:
@@ -319,7 +319,7 @@ def preview_approved_changes(
 def send_approved_candidate_changes(
     candidate_review_id: UUID,
     service: ResumeEnrichmentService = Depends(get_resume_enrichment_service),
-    current_user: User = Depends(require_roles("Recruiter", "Admin")),
+    current_user: User = Depends(require_roles("Admin")),
 ) -> dict:
     """Trigger guarded candidate write-back; disabled in the current environment."""
     try:
@@ -338,7 +338,7 @@ def approve_candidate_changes(
     candidate_review_id: UUID,
     request: ApproveCandidateChangesRequest,
     service: ResumeEnrichmentService = Depends(get_resume_enrichment_service),
-    current_user: User = Depends(require_roles("Recruiter", "Admin")),
+    current_user: User = Depends(require_roles("Admin")),
 ) -> dict[str, str]:
     """
     Approve proposed changes for a candidate.
@@ -385,7 +385,7 @@ def reject_candidate_changes(
     candidate_review_id: UUID,
     request: RejectCandidateChangesRequest,
     service: ResumeEnrichmentService = Depends(get_resume_enrichment_service),
-    current_user: User = Depends(require_roles("Recruiter", "Admin")),
+    current_user: User = Depends(require_roles("Admin")),
 ) -> dict[str, str]:
     """
     Reject proposed changes for a candidate.
