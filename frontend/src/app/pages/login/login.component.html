@@ -49,7 +49,11 @@
     </div>
     <div class="auth-card">
       <h2>Welcome back</h2>
-      <p class="auth-card-sub">Sign in to access your recruitment workspace.</p>
+      <p class="auth-card-sub">Use your Microsoft work account to access your recruitment workspace.</p>
+
+      <div class="auth-divider" role="separator" aria-label="Password sign in">
+        <span>Sign in with password</span>
+      </div>
 
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
         <div class="form-group">
@@ -111,9 +115,25 @@
         <p class="submit-error" *ngIf="submitError">{{ submitError }}</p>
 
         <button class="btn btn-primary btn-lg btn-block" type="submit" [disabled]="isSubmitting">
-          {{ isSubmitting ? 'Signing in...' : 'Sign In' }}
+          {{ isSubmitting ? 'Signing in...' : 'Sign In with Password' }}
         </button>
       </form>
+
+      <div class="auth-divider" role="separator" aria-label="Microsoft sign in">
+        <span>Or continue with Microsoft</span>
+      </div>
+
+      <button class="btn btn-lg btn-block microsoft-signin" type="button" [disabled]="isSubmitting" (click)="onMicrosoftSignIn()">
+        <span class="microsoft-logo" aria-hidden="true">
+          <span class="ms-tile ms-red"></span>
+          <span class="ms-tile ms-green"></span>
+          <span class="ms-tile ms-blue"></span>
+          <span class="ms-tile ms-yellow"></span>
+        </span>
+        <span>{{ isSubmitting ? 'Signing in...' : 'Continue with Microsoft' }}</span>
+      </button>
+
+      <p class="auth-microsoft-note">Only @kanini.com accounts are allowed.</p>
 
       <p class="auth-footnote">Authorized recruiters only</p>
     </div>

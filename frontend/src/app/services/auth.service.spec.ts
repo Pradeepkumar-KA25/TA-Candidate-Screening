@@ -27,6 +27,7 @@ describe('AuthService', () => {
 
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
 
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
@@ -48,6 +49,7 @@ describe('AuthService', () => {
   afterEach(() => {
     httpMock.verify();
     localStorage.clear();
+    sessionStorage.clear();
   });
 
   it('should persist session in localStorage when remember_me is true', () => {
@@ -73,7 +75,7 @@ describe('AuthService', () => {
     expect(session.token).toBe('token-value');
   });
 
-  it('should avoid persisting session when remember_me is false', () => {
+  it('should persist session in sessionStorage when remember_me is false', () => {
     const mockResponse: LoginResponse = {
       access_token: 'token-value',
       token_type: 'bearer',
@@ -92,6 +94,8 @@ describe('AuthService', () => {
     request.flush(mockResponse);
 
     expect(localStorage.getItem('ta.auth.session')).toBeNull();
+    const session = JSON.parse(sessionStorage.getItem('ta.auth.session') ?? '{}') as { token: string };
+    expect(session.token).toBe('token-value');
   });
 
   it('should expose current recruiter in currentUser$ after successful login', async () => {
@@ -140,6 +144,29 @@ describe('AuthService', () => {
     expect(freshService.getAccessToken()).toBe(activeToken);
   });
 
+  it('should restore authenticated session from sessionStorage', () => {
+    const activeToken = createJwt(600);
+    sessionStorage.setItem(
+      'ta.auth.session',
+      JSON.stringify({
+        token: activeToken,
+        tokenType: 'bearer',
+        expiresIn: 3600,
+        recruiter: {
+          id: '11111111-1111-1111-1111-111111111111',
+          full_name: 'Asha Sharma',
+          email: 'asha.sharma@example.com',
+          role: 'Recruiter',
+        },
+      })
+    );
+
+    const apiConfig = TestBed.inject(ApiConfigService);
+    const freshService = new AuthService(TestBed.inject(HttpClient), apiConfig);
+    expect(freshService.isAuthenticated()).toBeTrue();
+    expect(freshService.getAccessToken()).toBe(activeToken);
+  });
+
   it('should clear persisted session when token is expired', () => {
     const expiredToken = createJwt(-60);
     localStorage.setItem(
@@ -162,6 +189,7 @@ describe('AuthService', () => {
     expect(freshService.isAuthenticated()).toBeFalse();
     expect(freshService.getAccessToken()).toBeNull();
     expect(localStorage.getItem('ta.auth.session')).toBeNull();
+    expect(sessionStorage.getItem('ta.auth.session')).toBeNull();
   });
 
   it('should call backend logout and clear local session', async () => {
@@ -190,6 +218,7 @@ describe('AuthService', () => {
 
     await logoutPromise;
     expect(localStorage.getItem('ta.auth.session')).toBeNull();
+    expect(sessionStorage.getItem('ta.auth.session')).toBeNull();
     expect(service.getAccessToken()).toBeNull();
   });
 });

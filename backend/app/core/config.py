@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     initial_admin_name: str = "Admin User"
     initial_admin_email: str | None = None
     initial_admin_password: str | None = None
+    microsoft_tenant_id: str = "organizations"
+    microsoft_client_id: str | None = None
+    microsoft_allowed_email_domain: str = "kanini.com"
+    migration_login_emails: str = "admin@talent.com,ta@talent.com"
     zoho_accounts_base_url: str = "https://accounts.zoho.com"
     zoho_recruit_base_url: str = "https://recruit.zoho.com/recruit/v2"
     zoho_client_id: str | None = None

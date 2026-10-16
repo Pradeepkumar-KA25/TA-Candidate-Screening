@@ -14,6 +14,13 @@ class LoginRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
 
+class MicrosoftLoginRequest(BaseModel):
+    id_token: str = Field(min_length=1)
+    remember_me: bool = False
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+
 class RecruiterProfile(BaseModel):
     id: UUID
     full_name: str
