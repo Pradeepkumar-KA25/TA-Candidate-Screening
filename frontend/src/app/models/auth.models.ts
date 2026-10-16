@@ -4,6 +4,11 @@ export interface LoginRequest {
   remember_me: boolean;
 }
 
+export interface MicrosoftLoginRequest {
+  id_token: string;
+  remember_me: boolean;
+}
+
 export interface RecruiterProfile {
   id: string;
   full_name: string;

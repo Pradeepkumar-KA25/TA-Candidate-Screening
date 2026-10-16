@@ -10,9 +10,16 @@ This folder contains the backend service for the Talent Acquisition platform.
 
 ## Authentication slice
 - `POST /api/v1/auth/login` authenticates recruiters and returns a JWT access token plus profile data.
+- `POST /api/v1/auth/microsoft-login` authenticates recruiters using a Microsoft ID token and returns a JWT access token plus profile data.
 - `POST /api/v1/auth/logout` is a protected endpoint for Recruiter/Admin roles and acknowledges stateless JWT logout.
 - Protected routes use a shared bearer-token dependency that validates JWTs and resolves the current recruiter context.
 - Alembic migrations live under `alembic/` and are configured through `alembic.ini`.
+
+For Microsoft sign-in configuration:
+- `MICROSOFT_CLIENT_ID` must match the frontend app registration client ID.
+- `MICROSOFT_TENANT_ID` defaults to `organizations` and can be set to a tenant GUID.
+- `MICROSOFT_ALLOWED_EMAIL_DOMAIN` controls allowed organization email domains (for example `kanini.com`).
+- `MIGRATION_LOGIN_EMAILS` (comma-separated) keeps specific migration accounts on password login.
 
 ## Zoho integration status slice
 - `GET /api/v1/integrations/zoho/status` returns Zoho Recruit connection state, access level, sync type, and timestamps.

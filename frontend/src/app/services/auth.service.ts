@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, catchError, map, of, tap } from 'rxjs';
 
-import { AuthSession, LoginRequest, LoginResponse, RecruiterProfile } from '../models/auth.models';
+import { AuthSession, LoginRequest, LoginResponse, MicrosoftLoginRequest, RecruiterProfile } from '../models/auth.models';
 import { ApiConfigService } from '../config/api.config';
 
 const AUTH_STORAGE_KEY = 'ta.auth.session';
@@ -37,11 +37,23 @@ export class AuthService {
       tap((session) => {
         this.sessionSubject.next(session);
         this.currentUserSubject.next(session.recruiter);
-        if (payload.remember_me) {
-          localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
-        } else {
-          localStorage.removeItem(AUTH_STORAGE_KEY);
-        }
+        this.persistSession(session, payload.remember_me);
+      })
+    );
+  }
+
+  microsoftLogin(payload: MicrosoftLoginRequest): Observable<AuthSession> {
+    return this.httpClient.post<LoginResponse>(`${this.apiBaseUrl}/auth/microsoft-login`, payload).pipe(
+      map((response) => ({
+        token: response.access_token,
+        tokenType: response.token_type,
+        expiresIn: response.expires_in,
+        recruiter: response.recruiter,
+      })),
+      tap((session) => {
+        this.sessionSubject.next(session);
+        this.currentUserSubject.next(session.recruiter);
+        this.persistSession(session, payload.remember_me);
       })
     );
   }
@@ -50,6 +62,7 @@ export class AuthService {
     this.sessionSubject.next(null);
     this.currentUserSubject.next(null);
     localStorage.removeItem(AUTH_STORAGE_KEY);
+    sessionStorage.removeItem(AUTH_STORAGE_KEY);
   }
 
   logoutFromServer(): Observable<void> {
@@ -88,7 +101,9 @@ export class AuthService {
   }
 
   private restorePersistedSession(): void {
-    const serializedSession = localStorage.getItem(AUTH_STORAGE_KEY);
+    const serializedLocalSession = localStorage.getItem(AUTH_STORAGE_KEY);
+    const serializedSessionStorageSession = sessionStorage.getItem(AUTH_STORAGE_KEY);
+    const serializedSession = serializedLocalSession ?? serializedSessionStorageSession;
     if (!serializedSession) {
       return;
     }
@@ -97,13 +112,26 @@ export class AuthService {
       const session = JSON.parse(serializedSession) as AuthSession;
       if (!session.token || this.isTokenExpired(session.token)) {
         localStorage.removeItem(AUTH_STORAGE_KEY);
+        sessionStorage.removeItem(AUTH_STORAGE_KEY);
         return;
       }
       this.sessionSubject.next(session);
       this.currentUserSubject.next(session.recruiter);
     } catch {
       localStorage.removeItem(AUTH_STORAGE_KEY);
+      sessionStorage.removeItem(AUTH_STORAGE_KEY);
     }
+  }
+
+  private persistSession(session: AuthSession, rememberMe: boolean): void {
+    if (rememberMe) {
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+      sessionStorage.removeItem(AUTH_STORAGE_KEY);
+      return;
+    }
+
+    sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+    localStorage.removeItem(AUTH_STORAGE_KEY);
   }
 
   private isTokenExpired(token: string): boolean {

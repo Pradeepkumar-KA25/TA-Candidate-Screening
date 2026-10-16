@@ -22,6 +22,10 @@ export class AuthInterceptor implements HttpInterceptor {
 
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
     const accessToken = this.authService.getAccessToken();
+    const normalizedUrl = request.url.split('?')[0].replace(/\/+$/, '');
+    const isAuthLoginRequest =
+      normalizedUrl.endsWith('/auth/login') ||
+      normalizedUrl.endsWith('/auth/microsoft-login');
     const requestWithAuth = accessToken
       ? request.clone({
           setHeaders: {
@@ -32,7 +36,7 @@ export class AuthInterceptor implements HttpInterceptor {
 
     return next.handle(requestWithAuth).pipe(
       catchError((error: HttpErrorResponse) => {
-        if (error.status === 401) {
+        if (error.status === 401 && !!accessToken && !isAuthLoginRequest) {
           this.notificationService.warning('Your session has expired. Please sign in again.', 'Session expired');
           this.authService.logout();
           void this.router.navigate(['/login']);

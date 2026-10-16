@@ -20,6 +20,13 @@ class FakeAuthService:
             raise RuntimeError("FakeAuthService requires a response or error")
         return self.response
 
+    def microsoft_login(self, request):
+        if self.error is not None:
+            raise self.error
+        if self.response is None:
+            raise RuntimeError("FakeAuthService requires a response or error")
+        return self.response
+
 
 def test_login_endpoint_success() -> None:
     service = FakeAuthService(
@@ -133,5 +140,36 @@ def test_login_endpoint_returns_validation_error_shape() -> None:
         assert body["message"] == "Malformed request payload"
         assert body["path"] == "/api/v1/auth/login"
         assert isinstance(body["details"], list)
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_microsoft_login_endpoint_success() -> None:
+    service = FakeAuthService(
+        response=LoginResponse(
+            access_token="test-token",
+            expires_in=3600,
+            recruiter=RecruiterProfile(
+                id="11111111-1111-1111-1111-111111111111",
+                full_name="Asha Sharma",
+                email="asha.sharma@kanini.com",
+                role="Recruiter",
+            ),
+        )
+    )
+
+    app.dependency_overrides[get_auth_service] = lambda: service
+    try:
+        client = TestClient(app)
+
+        response = client.post(
+            "/api/v1/auth/microsoft-login",
+            json={"id_token": "dummy-token", "remember_me": False},
+        )
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["token_type"] == "bearer"
+        assert body["recruiter"]["email"] == "asha.sharma@kanini.com"
     finally:
         app.dependency_overrides.clear()

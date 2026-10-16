@@ -10,6 +10,83 @@
   max-width: 400px;
 }
 
+.microsoft-signin {
+  margin-top: 2px;
+  margin-bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #ffffff;
+  color: #1f2937;
+  border: 1px solid #d1d5db;
+  box-shadow: none;
+}
+
+.microsoft-signin:hover,
+.microsoft-signin:focus-visible {
+  background: #f8fafc;
+  border-color: #9ca3af;
+  outline: none;
+}
+
+.microsoft-signin:disabled {
+  opacity: 0.7;
+}
+
+.microsoft-logo {
+  width: 16px;
+  height: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 2px;
+}
+
+.ms-tile {
+  display: block;
+  width: 7px;
+  height: 7px;
+}
+
+.ms-red { background: #f25022; }
+.ms-green { background: #7fba00; }
+.ms-blue { background: #00a4ef; }
+.ms-yellow { background: #ffb900; }
+
+.microsoft-signin span:last-child {
+  font-weight: 600;
+}
+
+.auth-microsoft-note {
+  color: #52607a;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.auth-divider {
+  position: relative;
+  text-align: center;
+  margin: 16px 0 14px;
+}
+
+.auth-divider::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 1px solid #d9e1f2;
+}
+
+.auth-divider span {
+  position: relative;
+  background: #fff;
+  padding: 0 10px;
+  color: #64748b;
+  font-size: 12px;
+}
+
 .password-input {
   position: relative;
 }
